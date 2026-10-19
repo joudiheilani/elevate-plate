@@ -1,6 +1,6 @@
 # 🥗 Meal Planner
 
-![CI](https://github.com/YOUR_GITHUB_USERNAME/elevate-plate/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/joudiheilani/elevate-plate/actions/workflows/ci.yml/badge.svg)
 
 A web app for planning a week of meals. Keep a library of recipes, assign them to breakfast, lunch and dinner on each day, and get a combined shopping list for the week.
 
