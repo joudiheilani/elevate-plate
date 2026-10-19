@@ -1,0 +1,4 @@
+.github
+backend/tests
+*.db
+.env

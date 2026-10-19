@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meal Planner</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥗</text></svg>" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">🥗 Meal Planner</div>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-view="planner" role="tab">Week plan</button>
+        <button class="tab" data-view="recipes" role="tab">Recipes</button>
+        <button class="tab" data-view="shopping" role="tab">Shopping list</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- Weekly planner -->
+      <section id="view-planner" class="view active">
+        <div class="toolbar">
+          <div class="week-nav">
+            <button class="btn ghost" id="prev-week" aria-label="Previous week">‹</button>
+            <h2 id="week-label"></h2>
+            <button class="btn ghost" id="next-week" aria-label="Next week">›</button>
+          </div>
+          <button class="btn ghost" id="this-week">This week</button>
+        </div>
+        <div id="week-grid" class="week-grid"></div>
+      </section>
+
+      <!-- Recipe library -->
+      <section id="view-recipes" class="view">
+        <div class="toolbar">
+          <input type="search" id="recipe-search" placeholder="Search recipes…" />
+          <button class="btn primary" id="new-recipe">+ New recipe</button>
+        </div>
+        <div id="recipe-list" class="recipe-list"></div>
+      </section>
+
+      <!-- Shopping list -->
+      <section id="view-shopping" class="view">
+        <div class="toolbar">
+          <h2 id="shopping-label"></h2>
+          <button class="btn ghost" id="clear-checked">Uncheck all</button>
+        </div>
+        <ul id="shopping-list" class="shopping-list"></ul>
+      </section>
+    </main>
+
+    <!-- Recipe editor -->
+    <dialog id="recipe-dialog">
+      <form id="recipe-form" method="dialog">
+        <h2 id="recipe-dialog-title">New recipe</h2>
+        <label>Name <input name="name" required maxlength="200" /></label>
+        <label>Description <input name="description" /></label>
+        <div class="row">
+          <label>Servings <input name="servings" type="number" min="1" max="100" value="2" required /></label>
+          <label>Prep time (min) <input name="prep_minutes" type="number" min="0" max="1440" /></label>
+        </div>
+        <fieldset>
+          <legend>Ingredients</legend>
+          <div id="ingredient-rows"></div>
+          <button type="button" class="btn ghost small" id="add-ingredient">+ Add ingredient</button>
+        </fieldset>
+        <label>Instructions <textarea name="instructions" rows="4"></textarea></label>
+        <div class="dialog-actions">
+          <button type="button" class="btn ghost" id="cancel-recipe">Cancel</button>
+          <button type="submit" class="btn primary">Save recipe</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
