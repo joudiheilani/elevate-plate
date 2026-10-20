@@ -54,3 +54,24 @@ class MealPlanEntry(Base):
     recipe_id: Mapped[int] = mapped_column(ForeignKey("recipes.id", ondelete="CASCADE"))
 
     recipe: Mapped[Recipe] = relationship(back_populates="plan_entries")
+
+
+class PantryItem(Base):
+    """Something already in the fridge or pantry. A missing quantity means "have some"."""
+
+    __tablename__ = "pantry_items"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120))
+    quantity: Mapped[float | None] = mapped_column(Float, default=None)
+    unit: Mapped[str] = mapped_column(String(30), default="")
+
+
+class FoodRestriction(Base):
+    """An allergy or dislike. Recipes containing it are kept out of suggestions."""
+
+    __tablename__ = "food_restrictions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(80), unique=True)
+    kind: Mapped[str] = mapped_column(String(10))

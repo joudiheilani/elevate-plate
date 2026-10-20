@@ -3,50 +3,153 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Meal Planner</title>
+    <title>Elevate Plate</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥗</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.454.0/dist/umd/lucide.min.js" defer></script>
   </head>
   <body>
     <header class="topbar">
-      <div class="brand">🥗 Meal Planner</div>
+      <div class="brand">
+        <span class="brand-mark"><i data-lucide="chef-hat"></i></span>
+        Elevate Plate
+      </div>
       <nav class="tabs" role="tablist">
-        <button class="tab active" data-view="planner" role="tab">Week plan</button>
-        <button class="tab" data-view="recipes" role="tab">Recipes</button>
-        <button class="tab" data-view="shopping" role="tab">Shopping list</button>
+        <button class="tab active" data-view="planner" role="tab"><i data-lucide="calendar-days"></i><span>Plan</span></button>
+        <button class="tab" data-view="recipes" role="tab"><i data-lucide="book-open"></i><span>Recipes</span></button>
+        <button class="tab" data-view="pantry" role="tab"><i data-lucide="refrigerator"></i><span>Pantry</span></button>
+        <button class="tab" data-view="shopping" role="tab"><i data-lucide="shopping-cart"></i><span>Shopping</span></button>
+        <button class="tab" data-view="preferences" role="tab"><i data-lucide="shield-alert"></i><span>Allergies</span></button>
       </nav>
     </header>
 
     <main>
       <!-- Weekly planner -->
       <section id="view-planner" class="view active">
-        <div class="toolbar">
-          <div class="week-nav">
-            <button class="btn ghost" id="prev-week" aria-label="Previous week">‹</button>
-            <h2 id="week-label"></h2>
-            <button class="btn ghost" id="next-week" aria-label="Next week">›</button>
+        <div class="page-head">
+          <div>
+            <h1>Weekly plan</h1>
+            <p class="subtle" id="plan-progress"></p>
           </div>
-          <button class="btn ghost" id="this-week">This week</button>
+          <div class="week-nav">
+            <button class="btn icon" id="prev-week" aria-label="Previous week"><i data-lucide="chevron-left"></i></button>
+            <span class="week-label" id="week-label"></span>
+            <button class="btn icon" id="next-week" aria-label="Next week"><i data-lucide="chevron-right"></i></button>
+            <button class="btn ghost" id="this-week">Today</button>
+          </div>
         </div>
+        <div class="progress"><div class="progress-fill" id="plan-progress-bar"></div></div>
         <div id="week-grid" class="week-grid"></div>
       </section>
 
       <!-- Recipe library -->
       <section id="view-recipes" class="view">
-        <div class="toolbar">
-          <input type="search" id="recipe-search" placeholder="Search recipes…" />
-          <button class="btn primary" id="new-recipe">+ New recipe</button>
+        <div class="page-head">
+          <div>
+            <h1>Recipes</h1>
+            <p class="subtle">Your recipe library. <span class="in-pantry-key"><i data-lucide="check"></i> = already in your pantry</span></p>
+          </div>
+          <button class="btn primary" id="new-recipe"><i data-lucide="plus"></i>New recipe</button>
         </div>
+        <div class="filters">
+          <label class="search">
+            <i data-lucide="search"></i>
+            <input type="search" id="recipe-search" placeholder="Search recipes" />
+          </label>
+          <label class="switch">
+            <input type="checkbox" id="hide-conflicts" checked />
+            <span class="switch-track"></span>
+            Hide recipes with my allergies &amp; dislikes
+          </label>
+        </div>
+        <p class="notice" id="hidden-note" hidden></p>
         <div id="recipe-list" class="recipe-list"></div>
+      </section>
+
+      <!-- Pantry -->
+      <section id="view-pantry" class="view">
+        <div class="page-head">
+          <div>
+            <h1>Pantry &amp; fridge</h1>
+            <p class="subtle">What you already have. It's taken off your shopping list automatically.</p>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <form id="pantry-form" class="inline-form">
+              <input name="name" placeholder="Item, e.g. rolled oats" list="ingredient-suggestions" required maxlength="120" />
+              <input name="quantity" type="number" min="0" step="any" placeholder="Qty" />
+              <input name="unit" placeholder="Unit" maxlength="30" list="unit-suggestions" />
+              <button class="btn primary" type="submit"><i data-lucide="plus"></i>Add</button>
+            </form>
+            <p class="hint">Leave the quantity blank if you just "have some" (spices, oil…).</p>
+            <ul id="pantry-list" class="pantry-list"></ul>
+          </div>
+          <div class="card ideas-card">
+            <h2><i data-lucide="sparkles"></i>What can I make?</h2>
+            <p class="subtle">Recipes ranked by how much you already have. Recipes with your allergies or dislikes are left out.</p>
+            <div id="ideas-list" class="ideas-list"></div>
+          </div>
+        </div>
+        <datalist id="ingredient-suggestions"></datalist>
+        <datalist id="unit-suggestions"></datalist>
       </section>
 
       <!-- Shopping list -->
       <section id="view-shopping" class="view">
-        <div class="toolbar">
-          <h2 id="shopping-label"></h2>
-          <button class="btn ghost" id="clear-checked">Uncheck all</button>
+        <div class="page-head">
+          <div>
+            <h1>Shopping list</h1>
+            <p class="subtle" id="shopping-label"></p>
+          </div>
+          <button class="btn ghost" id="clear-checked"><i data-lucide="rotate-ccw"></i>Uncheck all</button>
         </div>
-        <ul id="shopping-list" class="shopping-list"></ul>
+        <div class="card">
+          <h2><i data-lucide="shopping-basket"></i>To buy <span class="count" id="to-buy-count"></span></h2>
+          <ul id="shopping-list" class="shopping-list"></ul>
+        </div>
+        <div class="card muted-card" id="have-card">
+          <h2><i data-lucide="refrigerator"></i>Already in your pantry <span class="count" id="have-count"></span></h2>
+          <ul id="have-list" class="shopping-list"></ul>
+        </div>
+      </section>
+
+      <!-- Allergies & dislikes -->
+      <section id="view-preferences" class="view">
+        <div class="page-head">
+          <div>
+            <h1>Allergies &amp; dislikes</h1>
+            <p class="subtle">Recipes containing these are kept out of meal ideas and the planner, and flagged in your recipe library.</p>
+          </div>
+        </div>
+        <div class="card">
+          <form id="restriction-form" class="inline-form">
+            <input name="name" placeholder="Food, e.g. mushrooms or dairy" required maxlength="80" />
+            <div class="segmented" role="radiogroup">
+              <label><input type="radio" name="kind" value="allergy" checked /><span>Allergy</span></label>
+              <label><input type="radio" name="kind" value="dislike" /><span>Dislike</span></label>
+            </div>
+            <button class="btn primary" type="submit"><i data-lucide="plus"></i>Add</button>
+          </form>
+          <div class="quick-add">
+            <span class="subtle">Quick add:</span>
+            <div id="quick-chips" class="chips"></div>
+          </div>
+          <p class="hint">Groups like <b>Dairy</b>, <b>Gluten</b>, <b>Nuts</b>, <b>Eggs</b>, <b>Shellfish</b>, <b>Fish</b>, <b>Soy</b> and <b>Meat</b> also cover their common ingredients. For example, Dairy covers milk, cheese, butter and yogurt.</p>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <h2 class="allergy-title"><i data-lucide="shield-alert"></i>Allergies</h2>
+            <div id="allergy-list" class="chips"></div>
+          </div>
+          <div class="card">
+            <h2 class="dislike-title"><i data-lucide="thumbs-down"></i>Dislikes</h2>
+            <div id="dislike-list" class="chips"></div>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -63,7 +166,7 @@
         <fieldset>
           <legend>Ingredients</legend>
           <div id="ingredient-rows"></div>
-          <button type="button" class="btn ghost small" id="add-ingredient">+ Add ingredient</button>
+          <button type="button" class="btn ghost small" id="add-ingredient"><i data-lucide="plus"></i>Add ingredient</button>
         </fieldset>
         <label>Instructions <textarea name="instructions" rows="4"></textarea></label>
         <div class="dialog-actions">

@@ -6,9 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from ..database import get_db
-from ..models import MealPlanEntry, Recipe
+from ..models import MealPlanEntry, PantryItem, Recipe
 from ..schemas import PlanEntryIn, PlanEntryOut, ShoppingList
-from ..services.shopping import aggregate_ingredients
+from ..services.shopping import aggregate_ingredients, apply_pantry
 from .recipes import get_recipe_or_404
 
 router = APIRouter(prefix="/api", tags=["meal plan"])
@@ -60,7 +60,7 @@ def clear_meal(entry_id: int, db: DbSession):
 
 @router.get("/shopping-list", response_model=ShoppingList, tags=["shopping list"])
 def get_shopping_list(start: dt.date, db: DbSession):
-    """Combined ingredient list for every meal planned in the week beginning at `start`."""
+    """Combined ingredients for the week beginning at `start`, minus what's in the pantry."""
     entries = db.scalars(
         week_entries_stmt(start).options(
             selectinload(MealPlanEntry.recipe).selectinload(Recipe.ingredients)
@@ -69,5 +69,8 @@ def get_shopping_list(start: dt.date, db: DbSession):
     return ShoppingList(
         start=start,
         end=start + WEEK_SPAN,
-        items=aggregate_ingredients(entry.recipe for entry in entries),
+        items=apply_pantry(
+            aggregate_ingredients(entry.recipe for entry in entries),
+            db.scalars(select(PantryItem)).all(),
+        ),
     )

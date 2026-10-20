@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -5,8 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from ..database import get_db
-from ..models import Ingredient, Recipe
-from ..schemas import IngredientIn, RecipeIn, RecipeOut
+from ..models import FoodRestriction, Ingredient, PantryItem, Recipe
+from ..schemas import IngredientIn, MealIdea, RecipeIn, RecipeOut
+from ..services.matching import find_conflicts, normalize, pantry_coverage
 
 router = APIRouter(prefix="/api/recipes", tags=["recipes"])
 DbSession = Annotated[Session, Depends(get_db)]
@@ -26,12 +28,58 @@ def build_ingredients(items: list[IngredientIn]) -> list[Ingredient]:
     ]
 
 
+def to_recipe_out(recipe: Recipe, restrictions: Sequence[FoodRestriction]) -> RecipeOut:
+    out = RecipeOut.model_validate(recipe)
+    out.conflicts = find_conflicts(recipe, restrictions)
+    return out
+
+
+def all_restrictions(db: Session) -> Sequence[FoodRestriction]:
+    return db.scalars(select(FoodRestriction)).all()
+
+
+def all_recipes(db: Session) -> Sequence[Recipe]:
+    return db.scalars(
+        select(Recipe).options(selectinload(Recipe.ingredients)).order_by(Recipe.name)
+    ).all()
+
+
 @router.get("", response_model=list[RecipeOut])
-def list_recipes(db: DbSession, q: str | None = None):
-    stmt = select(Recipe).options(selectinload(Recipe.ingredients)).order_by(Recipe.name)
-    if q:
-        stmt = stmt.where(Recipe.name.ilike(f"%{q.strip()}%"))
-    return db.scalars(stmt).all()
+def list_recipes(db: DbSession, q: str | None = None, safe_only: bool = False):
+    """List recipes, each flagged with any allergies/dislikes it conflicts with.
+
+    `safe_only=true` leaves out recipes that have conflicts.
+    """
+    restrictions = all_restrictions(db)
+    query = (q or "").strip().lower()
+    recipes = [
+        to_recipe_out(recipe, restrictions)
+        for recipe in all_recipes(db)
+        if query in recipe.name.lower()
+    ]
+    return [r for r in recipes if not r.conflicts] if safe_only else recipes
+
+
+@router.get("/ideas", response_model=list[MealIdea])
+def meal_ideas(db: DbSession):
+    """Recipes free of allergies/dislikes, best pantry match first."""
+    restrictions = all_restrictions(db)
+    pantry_names = {normalize(item.name) for item in db.scalars(select(PantryItem))}
+    ideas = []
+    for recipe in all_recipes(db):
+        out = to_recipe_out(recipe, restrictions)
+        if out.conflicts:
+            continue
+        have, missing = pantry_coverage(recipe, pantry_names)
+        ideas.append(MealIdea(recipe=out, have=have, missing=missing))
+    ideas.sort(
+        key=lambda idea: (
+            -len(idea.have) / max(len(idea.recipe.ingredients), 1),
+            len(idea.missing),
+            idea.recipe.name.lower(),
+        )
+    )
+    return ideas
 
 
 @router.post("", response_model=RecipeOut, status_code=status.HTTP_201_CREATED)
@@ -43,12 +91,12 @@ def create_recipe(payload: RecipeIn, db: DbSession):
     db.add(recipe)
     db.commit()
     db.refresh(recipe)
-    return recipe
+    return to_recipe_out(recipe, all_restrictions(db))
 
 
 @router.get("/{recipe_id}", response_model=RecipeOut)
 def get_recipe(recipe_id: int, db: DbSession):
-    return get_recipe_or_404(db, recipe_id)
+    return to_recipe_out(get_recipe_or_404(db, recipe_id), all_restrictions(db))
 
 
 @router.put("/{recipe_id}", response_model=RecipeOut)
@@ -59,7 +107,7 @@ def update_recipe(recipe_id: int, payload: RecipeIn, db: DbSession):
     recipe.ingredients = build_ingredients(payload.ingredients)
     db.commit()
     db.refresh(recipe)
-    return recipe
+    return to_recipe_out(recipe, all_restrictions(db))
 
 
 @router.delete("/{recipe_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -44,7 +44,16 @@ def test_shopping_list_endpoint(client, make_recipe):
     assert data["start"] == WEEK
     assert data["end"] == "2026-10-18"
     assert data["items"] == [
-        {"name": "spaghetti", "quantity": 2, "unit": "lb", "recipes": ["Pasta"]}
+        {
+            "name": "spaghetti",
+            "quantity": 2,
+            "unit": "lb",
+            "recipes": ["Pasta"],
+            "status": "buy",
+            "to_buy": 2,
+            "pantry_quantity": None,
+            "pantry_unit": None,
+        }
     ]
 
 
