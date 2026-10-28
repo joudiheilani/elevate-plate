@@ -9,7 +9,16 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from .database import Base, SessionLocal, engine, get_db
-from .routers import generator, groceries, pantry, plan, profile, recipes, restrictions
+from .routers import (
+    discover,
+    generator,
+    groceries,
+    pantry,
+    plan,
+    profile,
+    recipes,
+    restrictions,
+)
 from .seed import seed_if_empty
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
@@ -37,6 +46,7 @@ app.include_router(restrictions.router)
 app.include_router(profile.router)
 app.include_router(groceries.router)
 app.include_router(generator.router)
+app.include_router(discover.router)
 
 
 @app.get("/api/health", tags=["health"])

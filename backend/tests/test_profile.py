@@ -33,4 +33,4 @@ def test_diet_flags_recipes_and_costs_are_reported(client, make_recipe):
     assert burger["conflicts"] == [
         {"restriction": "Meat", "kind": "diet", "ingredient": "ground beef"}
     ]
-    assert burger["cost_per_serving"] == 2.75  # $5.50 per lb, serves 2
+    assert burger["cost_per_serving"] == 3.4  # BLS $6.79/lb ground beef, serves 2

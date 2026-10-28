@@ -453,7 +453,21 @@ input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; border-radius
 .recipe-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 7px; }
 .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 0.76rem; font-weight: 700; padding: 3px 9px; border: var(--border); border-radius: 999px; background: var(--paper); }
 .pill .lucide { width: 13px; height: 13px; }
-.pill.money { background: var(--mint); }
+.pill.money { background: var(--mint); cursor: help; }
+.pill.guess { background: var(--dislike-tint); cursor: help; }
+.recipe-card p a, .hint a { color: inherit; font-weight: 700; text-decoration-thickness: 2px; }
+
+/* ---------- Discover ---------- */
+.discover { margin-top: 34px; background: #e7f5ff; }
+.discover-form .search { flex: 1 1 260px; }
+.discover-grid { display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); margin-top: 20px; }
+.discover-card { display: flex; flex-direction: column; border: var(--border); border-radius: 16px; background: var(--card); box-shadow: var(--hard-sm); overflow: hidden; transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease); }
+.discover-card:hover { transform: translate(-3px, -3px) rotate(-0.5deg); box-shadow: var(--hard); }
+.discover-card img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-bottom: var(--border); background: var(--paper); }
+.discover-body { display: flex; flex-direction: column; gap: 10px; padding: 14px; flex: 1; }
+.discover-body h3 { font-size: 1rem; }
+.discover-card .card-actions { margin-top: auto; }
+a.btn { text-decoration: none; }
 .recipe-card p { margin: 0; font-size: 0.92rem; color: #45414c; }
 .ingredients { list-style: none; margin: 0; padding: 12px 14px; font-size: 0.87rem; display: grid; gap: 5px; border-radius: 12px; background: var(--paper); box-shadow: var(--inset-sm); }
 .ingredients li { display: flex; align-items: center; gap: 8px; }

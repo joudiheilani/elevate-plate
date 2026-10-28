@@ -721,6 +721,19 @@ $("#this-week").addEventListener("click", () => changeWeek(mondayOf(new Date()))
 // Recipes
 // =====================================================================
 
+/** Escape text, then turn bare URLs into links (used for imported recipes' credits). */
+function linkify(text) {
+  return escapeHtml(text).replace(/https?:\/\/[^\s)<]+/g, (url) =>
+    `<a href="${url}" target="_blank" rel="noopener noreferrer">${url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0]}</a>`);
+}
+
+/** Hover text listing each ingredient's estimated cost and where its price came from. */
+function costTooltip(recipe) {
+  const lines = recipe.cost_breakdown.map((line) =>
+    `${line.ingredient}: ${money(line.cost)} (${line.priced ? line.source : "not in our price list, guessed"})`);
+  return [`Estimated whole-recipe cost, ${recipe.servings} servings:`, ...lines].join("\n");
+}
+
 function renderRecipes() {
   $("#hide-conflicts").checked = state.hideConflicts;
   $$("#recipe-time .chip").forEach((chip) =>
@@ -750,7 +763,9 @@ function renderRecipes() {
   list.innerHTML = recipes.map((r, i) => {
     const meta = [`<span class="pill">${icon("users")}${r.servings}</span>`];
     if (r.prep_minutes != null) meta.push(`<span class="pill">${icon("clock")}${r.prep_minutes} min</span>`);
-    meta.push(`<span class="pill money" title="Estimated cost per serving">${icon("wallet")}${money(r.cost_per_serving)}/serving</span>`);
+    const guessed = r.cost_breakdown.filter((line) => !line.priced).length;
+    meta.push(`<span class="pill money" title="${escapeHtml(costTooltip(r))}">${icon("wallet")}${money(r.cost_per_serving)}/serving</span>`);
+    if (guessed) meta.push(`<span class="pill guess" title="${escapeHtml(costTooltip(r))}">${icon("circle-help")}${guessed} guessed</span>`);
     const ingredients = r.ingredients.map((ing) => {
       const have = inPantry.has(normalizeName(ing.name));
       return `<li class="${have ? "in-pantry" : ""}" title="${have ? "In your pantry" : ""}">${have ? icon("check") : ""}
@@ -762,7 +777,7 @@ function renderRecipes() {
         <div><h3>${escapeHtml(r.name)}</h3><div class="recipe-meta">${meta.join("")}</div></div>
       </div>
       ${r.conflicts.length ? `<div class="badges">${conflictBadges(r)}</div>` : ""}
-      ${r.description ? `<p>${escapeHtml(r.description)}</p>` : ""}
+      ${r.description ? `<p>${linkify(r.description)}</p>` : ""}
       ${ingredients ? `<ul class="ingredients">${ingredients}</ul>` : ""}
       <div class="card-actions">
         <button class="btn small" data-edit="${r.id}">${icon("pencil")}Edit</button>
@@ -875,6 +890,71 @@ form.addEventListener("submit", (event) => {
     await reload("recipes", "plan");
     renderRecipes();
   }, id ? "Recipe updated" : "Recipe added");
+});
+
+// ---------- Discover (TheMealDB) ----------
+
+let discovered = [];
+
+function renderDiscover() {
+  const grid = $("#discover-results");
+  if (!discovered.length) {
+    grid.innerHTML = "";
+    return;
+  }
+  grid.innerHTML = discovered.map((r, i) => {
+    const badges = r.conflicts.length ? `<div class="badges">${conflictBadges({ conflicts: r.conflicts })}</div>` : "";
+    const kind = [r.category, r.area].filter(Boolean).join(" · ");
+    return `<article class="discover-card reveal" style="--i:${i}">
+      <img src="${escapeHtml(r.thumbnail)}/preview" alt="" loading="lazy" onerror="this.onerror=null;this.src='${escapeHtml(r.thumbnail)}'" />
+      <div class="discover-body">
+        <h3>${escapeHtml(r.name)}</h3>
+        <div class="recipe-meta">
+          ${kind ? `<span class="pill">${escapeHtml(kind)}</span>` : ""}
+          <span class="pill money" title="Estimated, assuming ${r.servings} servings">${icon("wallet")}~${money(r.cost_per_serving)}/serving</span>
+          <span class="pill">${icon("list")}${r.ingredients.length} ingredients</span>
+        </div>
+        ${badges}
+        <div class="card-actions">
+          ${r.in_library
+            ? `<button class="btn small" disabled>${icon("check")}In your recipes</button>`
+            : `<button class="btn small go" data-import="${escapeHtml(r.id)}">${icon("plus")}Add to my recipes</button>`}
+          <a class="btn small" href="${escapeHtml(r.mealdb_url)}" target="_blank" rel="noopener">${icon("external-link")}View</a>
+        </div>
+      </div>
+    </article>`;
+  }).join("");
+  refreshIcons();
+}
+
+$("#discover-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const query = event.target.elements.q.value.trim();
+  const button = event.target.querySelector("button");
+  setGenerating(button, true, "Searching...");
+  run(async () => {
+    discovered = await api(`/api/discover?q=${encodeURIComponent(query)}`);
+    renderDiscover();
+    if (!discovered.length) {
+      $("#discover-results").innerHTML = `<p class="empty">${icon("search-x")}No recipes found for "${escapeHtml(query)}". Try a single word like "chicken".</p>`;
+      refreshIcons();
+    }
+  }).finally(() => setGenerating(button, false, "Search"));
+});
+
+$("#discover-results").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-import]");
+  if (!button) return;
+  button.disabled = true;
+  run(async () => {
+    const recipe = await api(`/api/discover/${button.dataset.import}/import`, { method: "POST" });
+    confetti(button);
+    discovered = discovered.map((r) => (r.id === button.dataset.import ? { ...r, in_library: true } : r));
+    await reload("recipes");
+    renderRecipes();
+    renderDiscover();
+    toast(`${recipe.name} added to your recipes`);
+  }).finally(() => { button.disabled = false; });
 });
 
 // =====================================================================

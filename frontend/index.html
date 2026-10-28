@@ -265,6 +265,20 @@
         </div>
         <p class="notice" id="hidden-note" hidden></p>
         <div id="recipe-list" class="recipe-list"></div>
+
+        <div class="card discover">
+          <h2><span class="icon-tile"><i data-lucide="globe"></i></span>Discover more recipes</h2>
+          <p class="subtle">Search a free public recipe database and add anything you like to your library. Each result shows an estimated cost and whether it fits your diet and allergies.</p>
+          <form id="discover-form" class="inline-form discover-form">
+            <label class="search">
+              <i data-lucide="search"></i>
+              <input name="q" type="search" placeholder="Try curry, pasta, chicken, soup..." required minlength="2" maxlength="60" />
+            </label>
+            <button class="btn primary" type="submit"><i data-lucide="search"></i><span>Search</span></button>
+          </form>
+          <p class="hint with-icon"><i data-lucide="info"></i>Recipe data and imagery: <a href="https://www.themealdb.com/" target="_blank" rel="noopener">TheMealDB</a>, free for educational use. Imported recipes link back to TheMealDB and the original source.</p>
+          <div id="discover-results" class="discover-grid"></div>
+        </div>
       </section>
 
       <!-- ============ Pantry ============ -->

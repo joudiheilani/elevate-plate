@@ -45,6 +45,15 @@ class Conflict(BaseModel):
     ingredient: str
 
 
+class CostLine(BaseModel):
+    """One ingredient's share of a recipe's estimated cost, and where its price came from."""
+
+    ingredient: str
+    cost: float
+    priced: bool  # False = not in the price table, so the cost is a flat guess
+    source: str
+
+
 class RecipeOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -57,6 +66,24 @@ class RecipeOut(BaseModel):
     ingredients: list[IngredientOut]
     conflicts: list[Conflict] = []
     cost_per_serving: float = 0
+    cost_breakdown: list[CostLine] = []
+
+
+class DiscoveredRecipe(BaseModel):
+    """A recipe found on TheMealDB, previewed before importing."""
+
+    id: str
+    name: str
+    category: str
+    area: str
+    thumbnail: str
+    mealdb_url: str
+    source_url: str | None
+    ingredients: list[IngredientIn]
+    servings: int
+    cost_per_serving: float
+    conflicts: list[Conflict]
+    in_library: bool
 
 
 class MealIdea(BaseModel):

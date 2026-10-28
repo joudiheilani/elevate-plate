@@ -22,6 +22,7 @@ A budget-aware meal planner. Plan your week yourself, or have Elevate Plate gene
 
 ### Everything else
 
+- **Discover recipes**: search [TheMealDB](https://www.themealdb.com/), a free public recipe database, from the Recipes tab. Each result shows an estimated cost per serving and any diet/allergy conflicts, and can be added to your library in one click (credited, with links to TheMealDB and the original source).
 - **Recipe library**: create, edit, search and delete recipes with ingredients, servings, prep time and instructions.
 - **Weekly planner**: assign a recipe to any breakfast, lunch or dinner slot and move between weeks.
 - **Pantry & fridge**: record what you already have. The shopping list subtracts it: fully stocked items move to an "Already in your pantry" section, and partly stocked items show only the shortfall. One click adds a bought item to the pantry.
@@ -34,7 +35,7 @@ A budget-aware meal planner. Plan your week yourself, or have Elevate Plate gene
 
 ## How the meal plan generator works
 
-The generator ([`services/generator.py`](backend/app/services/generator.py)) is rule-based and uses a built-in catalog of 26 recipes ([`data/catalog.py`](backend/app/data/catalog.py)) with cooking times, and a grocery price table ([`data/prices.py`](backend/app/data/prices.py)).
+The generator ([`services/generator.py`](backend/app/services/generator.py)) is rule-based and uses a built-in catalog of 43 recipes ([`data/catalog.py`](backend/app/data/catalog.py)) with cooking times, and a grocery price table ([`data/prices.py`](backend/app/data/prices.py)).
 
 1. **Filter**: keep recipes within the time limit that don't conflict with the diet, allergies or dislikes.
 2. **Keep your meals (mix mode)**: meals already planned that week are locked in. They're added to the grocery list first and never swapped.
@@ -43,17 +44,28 @@ The generator ([`services/generator.py`](backend/app/services/generator.py)) is 
 
 A whole week is generated in well under a second, for free, and the same inputs and seed always give the same plan, which keeps it testable.
 
+### Where the recipes come from
+
+- **Built-in catalog (43 recipes)**, in [`data/catalog.py`](backend/app/data/catalog.py): original write-ups of common home dishes (overnight oats, black bean tacos, minestrone...). Ingredient lists of everyday dishes aren't copyrightable, and the descriptions and instructions are written for this project, so they're free to use.
+- **TheMealDB** (on demand, via Discover): fetched live from TheMealDB's free API using its test key, which TheMealDB allows "during development of your app or for educational use". Results are credited as "Recipe data and imagery: TheMealDB", and imported recipes keep links to TheMealDB and to the original source. Recipes are only copied into your library when you choose to add one. Publishing an app on an app store would need a TheMealDB supporter key.
+- **Your own recipes**: whatever you add.
+
 ### Where the prices come from
 
-The prices in [`data/prices.py`](backend/app/data/prices.py) are **hand-written estimates** of typical US supermarket package prices (around 2024–25), based on general knowledge. They are not pulled from a store, an API or a dataset, and real prices vary by store, region and season. Treat them as ballpark figures for comparing meals and staying roughly on budget.
+Prices live in [`data/prices.py`](backend/app/data/prices.py), and every recipe shows a per-ingredient breakdown (hover over its cost) naming each price's source:
 
-How a "cost per serving" is worked out: each ingredient costs the share of its package the recipe uses (1 cup of rice is 1/20 of a $5.00, 20-cup bag, so $0.25). Those shares are added up and divided by the recipe's servings. Shopping-list prices are different on purpose: they're for whole packages, since that's what you pay at the register. Items you add yourself can carry your own real price, which is used instead of the estimate.
+- **U.S. Bureau of Labor Statistics "Average Price Data"** (U.S. city average, **September 2026**) for about 20 staples: eggs, milk, bread, ground beef, chicken breast, rice, pasta, bananas, tomatoes, potatoes, cheddar, lettuce, flour, butter, lemons, bacon, sugar, coffee, ice cream and oranges. BLS data is public domain. Per-pound prices are turned into package prices with typical sizes (a banana is about 0.4 lb, a white loaf is 20 oz).
+- **Estimates** for everything else: hand-written typical US supermarket prices. These are ballpark figures, not live store prices.
+- **Unknown ingredients** get a small flat guess (never multiplied by quantity) and are marked "guessed" in the app.
 
-Ways to make prices real, if needed later:
+How a cost is worked out: amounts are converted to the package's unit (grams to pounds, tablespoons to cups, and with typical densities and piece weights, cups of oats to ounces or carrots to pounds). A recipe pays for the share of each package it uses, divided by its servings. The shopping list instead prices whole packages, since that's what you pay at the register.
 
-- **Kroger Products API** (free developer account): live prices from Kroger-family stores near a ZIP code.
-- **U.S. Bureau of Labor Statistics "Average Price Data"**: official national average prices for staples (eggs, milk, bread, ground beef...), updated monthly. Good for calibrating the table.
-- **Let users correct prices**: save the price you actually paid per ingredient and prefer it over the estimate next time.
+**Why not GroceryChop?** GroceryChop has live store prices, but its [Terms of Service](https://grocerychop.com/terms) prohibit automated collection ("any robot, spider, scraper or other automated means") and building "a database or competing product from the prices". Its openly licensed Price Index (CC BY 4.0) only has category-level index numbers, not item prices. So it isn't used.
+
+Other ways to make prices more accurate later:
+
+- **Kroger Products API** (free developer account): live prices from Kroger-family stores near a ZIP code, within Kroger's API terms.
+- **Let users correct prices**: save the price you actually paid per ingredient and prefer it over the estimate.
 
 ### Would an LLM make it better?
 
@@ -92,8 +104,8 @@ elevate-plate/
 │   │   ├── schemas.py        # Pydantic request/response models + validation
 │   │   ├── seed.py           # Sample recipes for a fresh database
 │   │   ├── data/
-│   │   │   ├── catalog.py    # Built-in recipes for the generator
-│   │   │   └── prices.py     # Grocery package prices and kitchen staples
+│   │   │   ├── catalog.py    # 43 built-in recipes for the generator
+│   │   │   └── prices.py     # Grocery prices (BLS averages + estimates), staples
 │   │   ├── routers/
 │   │   │   ├── recipes.py    # /api/recipes CRUD and meal ideas
 │   │   │   ├── plan.py       # /api/plan and /api/shopping-list
@@ -101,10 +113,13 @@ elevate-plate/
 │   │   │   ├── restrictions.py  # /api/restrictions (allergies & dislikes)
 │   │   │   ├── profile.py    # /api/profile (budget, household, diet, mode)
 │   │   │   ├── groceries.py  # /api/groceries (your own shopping-list items)
-│   │   │   └── generator.py  # /api/generator (generate & apply a week)
+│   │   │   ├── generator.py  # /api/generator (generate & apply a week)
+│   │   │   └── discover.py   # /api/discover (search & import from TheMealDB)
 │   │   └── services/
 │   │       ├── matching.py   # Name normalisation, allergy & diet groups, pantry matching
-│   │       ├── pricing.py    # Cost estimates for ingredients and recipes
+│   │       ├── pricing.py    # Cost estimates and per-ingredient breakdowns
+│   │       ├── units.py      # Unit conversion (weight, volume, density, piece weight)
+│   │       ├── mealdb.py     # TheMealDB client and measure parser
 │   │       ├── shopping.py   # Scaling, aggregation, pantry subtraction, pricing
 │   │       └── generator.py  # Budget-aware meal plan generator
 │   └── tests/                # pytest suite
@@ -125,7 +140,7 @@ Interactive docs are served at `/docs` when running locally.
 | Method | Endpoint                               | Description                                   |
 | ------ | -------------------------------------- | --------------------------------------------- |
 | GET    | `/api/health`                          | Health check (also checks the DB connection)  |
-| GET    | `/api/recipes?q=&safe_only=`           | List recipes with cost per serving and any diet/allergy/dislike conflicts; `safe_only=true` hides them |
+| GET    | `/api/recipes?q=&safe_only=`           | List recipes with cost per serving, a per-ingredient cost breakdown and any diet/allergy/dislike conflicts; `safe_only=true` hides them |
 | GET    | `/api/recipes/ideas`                   | Safe recipes ranked by pantry coverage        |
 | POST   | `/api/recipes`                         | Create a recipe                               |
 | GET    | `/api/recipes/{id}`                    | Get one recipe                                |
@@ -149,6 +164,8 @@ Interactive docs are served at `/docs` when running locally.
 | DELETE | `/api/groceries/{id}`                  | Remove one                                    |
 | POST   | `/api/generator`                       | Preview a generated week (nothing is saved); `fill_gaps: true` keeps meals already planned |
 | POST   | `/api/generator/apply`                 | Save a generated week to the library and planner |
+| GET    | `/api/discover?q=`                     | Search TheMealDB; results include estimated cost and conflicts |
+| POST   | `/api/discover/{id}/import`            | Add a TheMealDB recipe to the library (credited) |
 
 ## Running locally
 

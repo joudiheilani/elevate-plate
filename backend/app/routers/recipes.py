@@ -9,7 +9,7 @@ from ..database import get_db
 from ..models import FoodRestriction, Ingredient, PantryItem, Recipe
 from ..schemas import IngredientIn, MealIdea, RecipeIn, RecipeOut
 from ..services.matching import diet_restrictions, find_conflicts, normalize, pantry_coverage
-from ..services.pricing import cost_per_serving
+from ..services.pricing import cost_breakdown, cost_per_serving
 from .profile import get_profile
 
 router = APIRouter(prefix="/api/recipes", tags=["recipes"])
@@ -34,6 +34,7 @@ def to_recipe_out(recipe: Recipe, restrictions: Sequence[FoodRestriction]) -> Re
     out = RecipeOut.model_validate(recipe)
     out.conflicts = find_conflicts(recipe, restrictions)
     out.cost_per_serving = cost_per_serving(recipe)
+    out.cost_breakdown = cost_breakdown(recipe)
     return out
 
 

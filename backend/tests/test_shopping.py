@@ -55,11 +55,11 @@ def test_shopping_list_endpoint(client, make_recipe):
             "pantry_unit": None,
             "source": "plan",
             "custom_id": None,
-            "est_cost": 3.0,  # two 1 lb boxes at $1.50
+            "est_cost": 2.76,  # two 1 lb boxes at the BLS average $1.38
             "price_known": True,
         }
     ]
-    assert data["estimated_total"] == 3.0
+    assert data["estimated_total"] == 2.76
     assert data["budget"] == 75  # default weekly budget
 
 
