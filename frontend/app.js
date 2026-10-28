@@ -656,8 +656,16 @@ function renderPlanner() {
         const warn = conflicts.length
           ? `<span class="warn" title="Contains ${escapeHtml(conflicts.map((c) => c.ingredient).join(", "))}">${icon("triangle-alert")}</span>`
           : "";
+        // A filled slot is still a dropdown, so switching recipes is one pick (no delete first).
+        // Keep the current recipe selectable even if it's now flagged by an allergy or diet.
+        const current = safeRecipes.some((r) => r.id === entry.recipe.id)
+          ? ""
+          : `<option value="${entry.recipe.id}">${escapeHtml(entry.recipe.name)}</option>`;
+        const choices = (current + options).replace(
+          `<option value="${entry.recipe.id}">`, `<option value="${entry.recipe.id}" selected>`);
         content = `<div class="meal">
-            <span class="meal-name">${escapeHtml(entry.recipe.name)}</span>${warn}
+            <select class="meal-select" data-day="${day}" data-meal="${meal.key}"
+              aria-label="${dayName} ${meal.label}: ${escapeHtml(entry.recipe.name)}. Choose a different recipe" title="Switch recipe">${choices}</select>${warn}
             <button class="icon-btn" data-clear="${entry.id}" title="Remove" aria-label="Remove ${escapeHtml(entry.recipe.name)}">${icon("x")}</button>
           </div>`;
       } else {

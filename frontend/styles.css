@@ -421,6 +421,15 @@ input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; border-radius
   animation: pop-in 0.4s var(--spring) both;
 }
 .meal-name { flex: 1; min-width: 0; overflow-wrap: break-word; hyphens: auto; }
+.meal-select {
+  flex: 1; min-width: 0; padding: 2px 18px 2px 0; border: 0; border-radius: 6px; box-shadow: none; cursor: pointer;
+  font-family: var(--display); font-size: 0.83rem; font-weight: 700; color: var(--ink); text-overflow: ellipsis;
+  -webkit-appearance: none; appearance: none;
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2317171c' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 2px center;
+}
+.meal-select:hover { background-color: rgba(255, 255, 255, 0.45); }
+.meal-select:focus { background-color: rgba(255, 255, 255, 0.6); box-shadow: 0 0 0 2px var(--ink); }
+.meal-select option { font-family: "DM Sans", system-ui, sans-serif; font-weight: 500; background: var(--card); }
 .meal .warn { color: var(--allergy); display: inline-grid; }
 .meal .warn .lucide { width: 15px; height: 15px; }
 .meal .icon-btn { color: var(--ink); padding: 3px; }
