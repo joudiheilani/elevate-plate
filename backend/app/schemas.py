@@ -5,7 +5,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 MealType = Literal["breakfast", "lunch", "dinner"]
 RestrictionKind = Literal["allergy", "dislike"]
+ConflictKind = Literal["allergy", "dislike", "diet"]
 ShoppingStatus = Literal["buy", "partial", "have", "check"]
+Diet = Literal["any", "vegetarian", "vegan", "pescatarian"]
+# manual: plan it yourself · auto: generate everything · hybrid: you plan, we fill the gaps
+PlanningMode = Literal["manual", "auto", "hybrid"]
 
 
 class IngredientIn(BaseModel):
@@ -34,10 +38,10 @@ class RecipeIn(BaseModel):
 
 
 class Conflict(BaseModel):
-    """An ingredient that clashes with one of the user's allergies or dislikes."""
+    """An ingredient that clashes with the user's allergies, dislikes or diet."""
 
     restriction: str
-    kind: RestrictionKind
+    kind: ConflictKind
     ingredient: str
 
 
@@ -52,6 +56,7 @@ class RecipeOut(BaseModel):
     prep_minutes: int | None
     ingredients: list[IngredientOut]
     conflicts: list[Conflict] = []
+    cost_per_serving: float = 0
 
 
 class MealIdea(BaseModel):
@@ -98,6 +103,11 @@ class ShoppingItem(BaseModel):
     to_buy: float | None = None
     pantry_quantity: float | None = None
     pantry_unit: str | None = None
+    # "custom" items were added by hand; custom_id identifies them for deletion.
+    source: Literal["plan", "custom"] = "plan"
+    custom_id: int | None = None
+    est_cost: float = 0
+    price_known: bool = True
 
 
 class PantryItemIn(BaseModel):
@@ -131,3 +141,87 @@ class ShoppingList(BaseModel):
     start: dt.date
     end: dt.date
     items: list[ShoppingItem]
+    estimated_total: float = 0
+    budget: float | None = None
+
+
+class GroceryItemIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    name: str = Field(min_length=1, max_length=120)
+    quantity: float | None = Field(default=None, ge=0)
+    unit: str = Field(default="", max_length=30)
+    price: float | None = Field(default=None, ge=0, le=10000)
+
+
+class GroceryItemOut(GroceryItemIn):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+
+
+class ProfileData(BaseModel):
+    weekly_budget: float = Field(default=75, ge=0, le=5000)
+    people: int = Field(default=2, ge=1, le=12)
+    max_minutes: int | None = Field(default=30, ge=5, le=600)  # None = no limit
+    diet: Diet = "any"
+    meals: list[MealType] = Field(default=["breakfast", "lunch", "dinner"], min_length=1)
+    mode: PlanningMode = "auto"
+    assume_staples: bool = True  # oil, spices etc. count as already at home
+
+
+class GenerateRequest(BaseModel):
+    start: dt.date
+    weekly_budget: float = Field(ge=10, le=5000)
+    people: int = Field(default=2, ge=1, le=12)
+    max_minutes: int | None = Field(default=None, ge=5, le=600)
+    diet: Diet = "any"
+    meals: list[MealType] = Field(min_length=1)
+    days: int = Field(default=7, ge=1, le=7)
+    use_pantry: bool = True
+    assume_staples: bool = True  # oil and spices are already at home
+    fill_gaps: bool = False  # keep meals already planned that week; only fill empty slots
+    seed: int | None = None  # same seed + same inputs = same plan; change it to reshuffle
+
+
+class PlanRecipe(BaseModel):
+    name: str
+    description: str
+    instructions: str
+    servings: int
+    prep_minutes: int | None
+    ingredients: list[IngredientIn]
+    cost_per_serving: float
+
+
+class GeneratedMeal(BaseModel):
+    day: dt.date
+    meal_type: MealType
+    recipe: PlanRecipe
+    cost: float  # for everyone eating this meal
+    locked: bool = False  # already planned by the user (mix mode); kept as-is
+
+
+class GeneratedPlan(BaseModel):
+    meals: list[GeneratedMeal]
+    groceries: list[ShoppingItem]
+    estimated_total: float
+    budget: float
+    within_budget: bool
+    average_minutes: int | None
+    notes: list[str]
+
+
+class ApplyMeal(BaseModel):
+    day: dt.date
+    meal_type: MealType
+    recipe_name: str = Field(min_length=1, max_length=200)
+
+
+class ApplyPlanIn(BaseModel):
+    meals: list[ApplyMeal] = Field(min_length=1, max_length=50)
+
+
+class ApplyPlanOut(BaseModel):
+    recipes_added: int
+    meals_planned: int

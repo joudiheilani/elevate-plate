@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session, selectinload
 from ..database import get_db
 from ..models import FoodRestriction, Ingredient, PantryItem, Recipe
 from ..schemas import IngredientIn, MealIdea, RecipeIn, RecipeOut
-from ..services.matching import find_conflicts, normalize, pantry_coverage
+from ..services.matching import diet_restrictions, find_conflicts, normalize, pantry_coverage
+from ..services.pricing import cost_per_serving
+from .profile import get_profile
 
 router = APIRouter(prefix="/api/recipes", tags=["recipes"])
 DbSession = Annotated[Session, Depends(get_db)]
@@ -31,11 +33,13 @@ def build_ingredients(items: list[IngredientIn]) -> list[Ingredient]:
 def to_recipe_out(recipe: Recipe, restrictions: Sequence[FoodRestriction]) -> RecipeOut:
     out = RecipeOut.model_validate(recipe)
     out.conflicts = find_conflicts(recipe, restrictions)
+    out.cost_per_serving = cost_per_serving(recipe)
     return out
 
 
-def all_restrictions(db: Session) -> Sequence[FoodRestriction]:
-    return db.scalars(select(FoodRestriction)).all()
+def all_restrictions(db: Session) -> list[FoodRestriction]:
+    """The user's allergies and dislikes, plus whatever their diet rules out."""
+    return [*db.scalars(select(FoodRestriction)), *diet_restrictions(get_profile(db).diet)]
 
 
 def all_recipes(db: Session) -> Sequence[Recipe]:

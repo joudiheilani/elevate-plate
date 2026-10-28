@@ -4,31 +4,223 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Elevate Plate</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥗</text></svg>" />
+    <meta name="description" content="Plan meals around your budget, diet and cooking time." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%231fd1a0'/><stop offset='1' stop-color='%230ea5e9'/></linearGradient></defs><circle cx='32' cy='32' r='30' fill='url(%23g)'/><path d='M20 36h24M24 36c0-6 4-12 8-12s8 6 8 12M32 24v-4' stroke='white' stroke-width='4' fill='none' stroke-linecap='round'/></svg>" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.454.0/dist/umd/lucide.min.js" defer></script>
   </head>
   <body>
+    <div class="bg-shapes" aria-hidden="true">
+      <span class="shape s1"></span><span class="shape s2"></span><span class="shape s3"></span>
+      <span class="shape s4"></span><span class="shape s5"></span><span class="shape s6"></span>
+    </div>
+
     <header class="topbar">
       <div class="brand">
         <span class="brand-mark"><i data-lucide="chef-hat"></i></span>
-        Elevate Plate
+        <span class="brand-name">Elevate <b>Plate</b></span>
       </div>
-      <nav class="tabs" role="tablist">
-        <button class="tab active" data-view="planner" role="tab"><i data-lucide="calendar-days"></i><span>Plan</span></button>
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <span class="tab-indicator" aria-hidden="true"></span>
+        <button class="tab active" data-view="home" role="tab"><i data-lucide="house"></i><span>Home</span></button>
+        <button class="tab" data-view="planner" role="tab"><i data-lucide="calendar-days"></i><span>Plan</span></button>
         <button class="tab" data-view="recipes" role="tab"><i data-lucide="book-open"></i><span>Recipes</span></button>
         <button class="tab" data-view="pantry" role="tab"><i data-lucide="refrigerator"></i><span>Pantry</span></button>
         <button class="tab" data-view="shopping" role="tab"><i data-lucide="shopping-cart"></i><span>Shopping</span></button>
-        <button class="tab" data-view="preferences" role="tab"><i data-lucide="shield-alert"></i><span>Allergies</span></button>
+        <button class="tab" data-view="preferences" role="tab"><i data-lucide="sliders-horizontal"></i><span>Diet</span></button>
       </nav>
+      <button class="budget-chip" data-goto="shopping" title="This week's estimated groceries vs. your budget">
+        <i data-lucide="wallet"></i><span id="budget-chip-text">$0 / $0</span>
+      </button>
     </header>
 
     <main>
-      <!-- Weekly planner -->
-      <section id="view-planner" class="view active">
+      <!-- ============ Home ============ -->
+      <section id="view-home" class="view active">
+        <div class="hero card">
+          <div class="hero-text">
+            <p class="sticker">Your week, elevated</p>
+            <h1>Eat well. <span class="marker">Spend smart.</span></h1>
+            <p class="subtle">Plan your meals yourself, or let Elevate Plate build a week around your budget, your diet and the time you have to cook.</p>
+          </div>
+          <div class="ring-wrap" title="This week's estimated grocery cost">
+            <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="ring-track" cx="60" cy="60" r="50" />
+              <circle class="ring-fill" id="home-ring" cx="60" cy="60" r="50" />
+            </svg>
+            <div class="ring-label">
+              <strong id="home-ring-value">$0</strong>
+              <span id="home-ring-sub">this week</span>
+            </div>
+          </div>
+        </div>
+
+        <h2 class="section-title">How do you want to plan?</h2>
+        <div class="mode-grid" role="radiogroup" aria-label="Planning mode">
+          <button class="mode-card" data-mode="manual" role="radio" aria-checked="false">
+            <span class="mode-icon"><i data-lucide="pencil-ruler"></i></span>
+            <span class="mode-title">I'll plan it myself</span>
+            <span class="mode-text">Pick your own recipes and meals, and build your own grocery list with prices.</span>
+            <span class="mode-tag">Full control</span>
+            <span class="mode-check"><i data-lucide="check"></i></span>
+          </button>
+          <button class="mode-card" data-mode="hybrid" role="radio" aria-checked="false">
+            <span class="mode-icon"><i data-lucide="puzzle"></i></span>
+            <span class="mode-title">Mix it up</span>
+            <span class="mode-text">Plan the meals you already have in mind. We'll fill every empty slot to fit your budget.</span>
+            <span class="mode-tag">You + us</span>
+            <span class="mode-check"><i data-lucide="check"></i></span>
+          </button>
+          <button class="mode-card" data-mode="auto" role="radio" aria-checked="false">
+            <span class="mode-icon"><i data-lucide="wand-sparkles"></i></span>
+            <span class="mode-title">Plan it for me</span>
+            <span class="mode-text">Get a full week of meals and a grocery list built around your budget, diet and cooking time.</span>
+            <span class="mode-tag">Hands-off</span>
+            <span class="mode-check"><i data-lucide="check"></i></span>
+          </button>
+        </div>
+
+        <!-- Manual mode -->
+        <div id="manual-panel" class="panel" hidden>
+          <div class="steps">
+            <div class="step card">
+              <span class="step-num">1</span>
+              <h3>Add your recipes</h3>
+              <p class="subtle">Save the meals you love, with ingredients and cooking time.</p>
+              <button class="btn ghost" data-goto="recipes"><i data-lucide="book-open"></i>Recipes</button>
+            </div>
+            <div class="step card">
+              <span class="step-num">2</span>
+              <h3>Fill your week</h3>
+              <p class="subtle">Drop recipes into breakfast, lunch and dinner for each day.</p>
+              <button class="btn ghost" data-goto="planner"><i data-lucide="calendar-days"></i>Plan</button>
+            </div>
+            <div class="step card">
+              <span class="step-num">3</span>
+              <h3>Shop on budget</h3>
+              <p class="subtle">Your list builds itself. Add your own items and prices too.</p>
+              <button class="btn ghost" data-goto="shopping"><i data-lucide="shopping-cart"></i>Shopping</button>
+            </div>
+          </div>
+          <div class="card budget-quick">
+            <div class="quick-field">
+              <label for="manual-budget"><i data-lucide="piggy-bank"></i>Weekly grocery budget</label>
+              <div class="money-input"><span>$</span><input id="manual-budget" type="number" min="0" max="5000" step="5" /></div>
+            </div>
+            <div class="quick-field">
+              <label for="manual-people"><i data-lucide="users"></i>People eating</label>
+              <input id="manual-people" type="number" min="1" max="12" step="1" />
+            </div>
+          </div>
+          <p class="hint">Your shopping list scales every recipe to the number of people eating.</p>
+        </div>
+
+        <!-- Auto & mix modes share the generator -->
+        <div id="auto-panel" class="panel" hidden>
+          <div id="hybrid-info" class="card hybrid-info" hidden>
+            <span class="big-count" id="hybrid-count">0</span>
+            <div class="grow">
+              <h3>Meals you've planned for <span id="hybrid-week"></span></h3>
+              <p class="subtle">We'll keep these exactly as they are, count them toward your budget, and fill the open slots below.</p>
+            </div>
+            <button class="btn" data-goto="planner" type="button"><i data-lucide="calendar-days"></i>Plan some meals</button>
+          </div>
+          <form id="generator-form" class="card gen-form">
+            <div class="field budget-field">
+              <span class="label"><i data-lucide="piggy-bank"></i>Weekly grocery budget</span>
+              <div class="budget-display">
+                <span>$</span><input id="gen-budget" type="number" min="10" max="5000" step="5" aria-label="Weekly budget in dollars" />
+              </div>
+              <input id="gen-budget-range" type="range" min="20" max="400" step="5" aria-label="Weekly budget slider" />
+            </div>
+
+            <div class="field">
+              <span class="label"><i data-lucide="users"></i>People</span>
+              <div class="stepper">
+                <button type="button" class="btn icon" data-people-step="-1" aria-label="Fewer people"><i data-lucide="minus"></i></button>
+                <output id="gen-people">2</output>
+                <button type="button" class="btn icon" data-people-step="1" aria-label="More people"><i data-lucide="plus"></i></button>
+              </div>
+            </div>
+
+            <div class="field wide">
+              <span class="label"><i data-lucide="timer"></i>Time to cook, per meal</span>
+              <div class="chip-group" id="gen-time">
+                <button type="button" class="chip" data-minutes="15">15 min</button>
+                <button type="button" class="chip" data-minutes="20">20 min</button>
+                <button type="button" class="chip" data-minutes="30">30 min</button>
+                <button type="button" class="chip" data-minutes="45">45 min</button>
+                <button type="button" class="chip" data-minutes="60">1 hour</button>
+                <button type="button" class="chip" data-minutes="">No limit</button>
+              </div>
+            </div>
+
+            <div class="field wide">
+              <span class="label"><i data-lucide="leaf"></i>Diet</span>
+              <div class="chip-group" id="gen-diet">
+                <button type="button" class="chip" data-diet="any">Anything</button>
+                <button type="button" class="chip" data-diet="vegetarian">Vegetarian</button>
+                <button type="button" class="chip" data-diet="vegan">Vegan</button>
+                <button type="button" class="chip" data-diet="pescatarian">Pescatarian</button>
+              </div>
+            </div>
+
+            <div class="field wide">
+              <span class="label"><i data-lucide="utensils"></i>Meals to plan</span>
+              <div class="chip-group" id="gen-meals">
+                <button type="button" class="chip meal-chip breakfast" data-meal="breakfast"><i data-lucide="sunrise"></i>Breakfast</button>
+                <button type="button" class="chip meal-chip lunch" data-meal="lunch"><i data-lucide="sun"></i>Lunch</button>
+                <button type="button" class="chip meal-chip dinner" data-meal="dinner"><i data-lucide="moon"></i>Dinner</button>
+              </div>
+            </div>
+
+            <div class="field wide switches">
+              <label class="switch"><input type="checkbox" id="gen-use-pantry" checked /><span class="switch-track"></span>Use what's in my pantry</label>
+              <label class="switch"><input type="checkbox" id="gen-staples" checked /><span class="switch-track"></span>I have basics at home (oil, spices, soy sauce)</label>
+            </div>
+
+            <p class="hint with-icon wide" id="gen-restrictions-note"></p>
+
+            <button class="btn primary big wide" type="submit" id="generate-btn">
+              <i data-lucide="sparkles"></i><span>Generate my week</span>
+            </button>
+          </form>
+
+          <div id="gen-result" class="gen-result" hidden>
+            <div class="card result-summary">
+              <div class="ring-wrap small">
+                <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+                  <circle class="ring-track" cx="60" cy="60" r="50" />
+                  <circle class="ring-fill" id="gen-ring" cx="60" cy="60" r="50" />
+                </svg>
+                <div class="ring-label"><strong id="gen-ring-pct">0%</strong><span>of budget</span></div>
+              </div>
+              <div class="stats">
+                <div class="stat"><span class="stat-value" id="stat-total">$0</span><span class="stat-label">groceries</span></div>
+                <div class="stat"><span class="stat-value" id="stat-meals">0</span><span class="stat-label">meals</span></div>
+                <div class="stat"><span class="stat-value" id="stat-minutes">0</span><span class="stat-label">avg minutes</span></div>
+                <div class="stat"><span class="stat-value" id="stat-per-meal">$0</span><span class="stat-label">per person, per meal</span></div>
+              </div>
+              <div class="result-actions">
+                <button class="btn ghost" id="shuffle-btn" type="button"><i data-lucide="shuffle"></i>Shuffle</button>
+                <button class="btn go" id="apply-btn" type="button"><i data-lucide="calendar-check"></i><span>Use this plan</span></button>
+              </div>
+            </div>
+            <div id="gen-notes"></div>
+            <div class="gen-week" id="gen-week"></div>
+            <details class="card groceries-preview">
+              <summary><span class="icon-tile"><i data-lucide="receipt"></i></span><span id="gen-groceries-title">Grocery list</span><i data-lucide="chevron-down" class="chev"></i></summary>
+              <ul id="gen-groceries" class="price-list"></ul>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Planner ============ -->
+      <section id="view-planner" class="view">
         <div class="page-head">
           <div>
             <h1>Weekly plan</h1>
@@ -45,12 +237,12 @@
         <div id="week-grid" class="week-grid"></div>
       </section>
 
-      <!-- Recipe library -->
+      <!-- ============ Recipes ============ -->
       <section id="view-recipes" class="view">
         <div class="page-head">
           <div>
             <h1>Recipes</h1>
-            <p class="subtle">Your recipe library. <span class="in-pantry-key"><i data-lucide="check"></i> = already in your pantry</span></p>
+            <p class="subtle">Your library, with cooking time and an estimated cost per serving.</p>
           </div>
           <button class="btn primary" id="new-recipe"><i data-lucide="plus"></i>New recipe</button>
         </div>
@@ -59,22 +251,28 @@
             <i data-lucide="search"></i>
             <input type="search" id="recipe-search" placeholder="Search recipes" />
           </label>
+          <div class="chip-group" id="recipe-time" aria-label="Cooking time filter">
+            <button type="button" class="chip" data-max="">Any time</button>
+            <button type="button" class="chip" data-max="20">≤ 20 min</button>
+            <button type="button" class="chip" data-max="30">≤ 30 min</button>
+            <button type="button" class="chip" data-max="45">≤ 45 min</button>
+          </div>
           <label class="switch">
             <input type="checkbox" id="hide-conflicts" checked />
             <span class="switch-track"></span>
-            Hide recipes with my allergies &amp; dislikes
+            Hide what I can't eat
           </label>
         </div>
         <p class="notice" id="hidden-note" hidden></p>
         <div id="recipe-list" class="recipe-list"></div>
       </section>
 
-      <!-- Pantry -->
+      <!-- ============ Pantry ============ -->
       <section id="view-pantry" class="view">
         <div class="page-head">
           <div>
             <h1>Pantry &amp; fridge</h1>
-            <p class="subtle">What you already have. It's taken off your shopping list automatically.</p>
+            <p class="subtle">What you already have is taken off your shopping list automatically.</p>
           </div>
         </div>
         <div class="two-col">
@@ -85,12 +283,12 @@
               <input name="unit" placeholder="Unit" maxlength="30" list="unit-suggestions" />
               <button class="btn primary" type="submit"><i data-lucide="plus"></i>Add</button>
             </form>
-            <p class="hint">Leave the quantity blank if you just "have some" (spices, oil…).</p>
-            <ul id="pantry-list" class="pantry-list"></ul>
+            <p class="hint">Leave the quantity blank if you just "have some" (spices, oil...).</p>
+            <ul id="pantry-list" class="item-list"></ul>
           </div>
-          <div class="card ideas-card">
-            <h2><i data-lucide="sparkles"></i>What can I make?</h2>
-            <p class="subtle">Recipes ranked by how much you already have. Recipes with your allergies or dislikes are left out.</p>
+          <div class="card">
+            <h2><span class="icon-tile"><i data-lucide="sparkles"></i></span>What can I make?</h2>
+            <p class="subtle">Your recipes, ranked by how much you already have. Anything you can't eat is left out.</p>
             <div id="ideas-list" class="ideas-list"></div>
           </div>
         </div>
@@ -98,7 +296,7 @@
         <datalist id="unit-suggestions"></datalist>
       </section>
 
-      <!-- Shopping list -->
+      <!-- ============ Shopping ============ -->
       <section id="view-shopping" class="view">
         <div class="page-head">
           <div>
@@ -107,25 +305,64 @@
           </div>
           <button class="btn ghost" id="clear-checked"><i data-lucide="rotate-ccw"></i>Uncheck all</button>
         </div>
-        <div class="card">
-          <h2><i data-lucide="shopping-basket"></i>To buy <span class="count" id="to-buy-count"></span></h2>
-          <ul id="shopping-list" class="shopping-list"></ul>
+
+        <div class="card budget-card">
+          <div class="budget-head">
+            <div>
+              <span class="eyebrow">Estimated total</span>
+              <strong class="big-number" id="shop-total">$0.00</strong>
+            </div>
+            <div class="align-right">
+              <span class="eyebrow">Weekly budget</span>
+              <strong class="big-number muted-number" id="shop-budget">$0</strong>
+            </div>
+          </div>
+          <div class="meter"><div class="meter-fill" id="shop-meter"></div></div>
+          <p class="subtle" id="shop-meter-note"></p>
+          <p class="hint with-icon"><i data-lucide="info"></i>Prices are rough estimates of typical US supermarket prices for the package you'd buy, not live store prices. Add your own price to any item you enter.</p>
         </div>
-        <div class="card muted-card" id="have-card">
-          <h2><i data-lucide="refrigerator"></i>Already in your pantry <span class="count" id="have-count"></span></h2>
-          <ul id="have-list" class="shopping-list"></ul>
+
+        <div class="card">
+          <h2><span class="icon-tile"><i data-lucide="list-plus"></i></span>Add your own item</h2>
+          <form id="grocery-form" class="inline-form grocery-form">
+            <input name="name" placeholder="Item, e.g. coffee" required maxlength="120" />
+            <input name="quantity" type="number" min="0" step="any" placeholder="Qty" />
+            <input name="unit" placeholder="Unit" maxlength="30" list="unit-suggestions" />
+            <div class="money-input small"><span>$</span><input name="price" type="number" min="0" step="0.01" placeholder="Price" /></div>
+            <button class="btn primary" type="submit"><i data-lucide="plus"></i>Add</button>
+          </form>
+          <p class="hint">Leave the price blank and we'll estimate it.</p>
+        </div>
+
+        <div class="card">
+          <h2><span class="icon-tile"><i data-lucide="shopping-basket"></i></span>To buy <span class="count" id="to-buy-count"></span></h2>
+          <ul id="shopping-list" class="item-list"></ul>
+        </div>
+        <div class="card" id="have-card">
+          <h2><span class="icon-tile"><i data-lucide="refrigerator"></i></span>Already in your pantry <span class="count" id="have-count"></span></h2>
+          <ul id="have-list" class="item-list"></ul>
         </div>
       </section>
 
-      <!-- Allergies & dislikes -->
+      <!-- ============ Diet & allergies ============ -->
       <section id="view-preferences" class="view">
         <div class="page-head">
           <div>
-            <h1>Allergies &amp; dislikes</h1>
-            <p class="subtle">Recipes containing these are kept out of meal ideas and the planner, and flagged in your recipe library.</p>
+            <h1>Diet &amp; allergies</h1>
+            <p class="subtle">Recipes that don't fit are kept out of generated plans, meal ideas and the planner, and flagged in your library.</p>
           </div>
         </div>
         <div class="card">
+          <h2><span class="icon-tile"><i data-lucide="leaf"></i></span>Diet</h2>
+          <div class="chip-group" id="pref-diet">
+            <button type="button" class="chip" data-diet="any">Anything</button>
+            <button type="button" class="chip" data-diet="vegetarian">Vegetarian</button>
+            <button type="button" class="chip" data-diet="vegan">Vegan</button>
+            <button type="button" class="chip" data-diet="pescatarian">Pescatarian</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2><span class="icon-tile"><i data-lucide="shield-alert"></i></span>Allergies &amp; dislikes</h2>
           <form id="restriction-form" class="inline-form">
             <input name="name" placeholder="Food, e.g. mushrooms or dairy" required maxlength="80" />
             <div class="segmented" role="radiogroup">
@@ -142,11 +379,11 @@
         </div>
         <div class="two-col">
           <div class="card">
-            <h2 class="allergy-title"><i data-lucide="shield-alert"></i>Allergies</h2>
+            <h2 class="allergy-title"><span class="icon-tile"><i data-lucide="shield-alert"></i></span>Allergies</h2>
             <div id="allergy-list" class="chips"></div>
           </div>
           <div class="card">
-            <h2 class="dislike-title"><i data-lucide="thumbs-down"></i>Dislikes</h2>
+            <h2 class="dislike-title"><span class="icon-tile"><i data-lucide="thumbs-down"></i></span>Dislikes</h2>
             <div id="dislike-list" class="chips"></div>
           </div>
         </div>
@@ -161,7 +398,7 @@
         <label>Description <input name="description" /></label>
         <div class="row">
           <label>Servings <input name="servings" type="number" min="1" max="100" value="2" required /></label>
-          <label>Prep time (min) <input name="prep_minutes" type="number" min="0" max="1440" /></label>
+          <label>Cooking time (min) <input name="prep_minutes" type="number" min="0" max="1440" /></label>
         </div>
         <fieldset>
           <legend>Ingredients</legend>

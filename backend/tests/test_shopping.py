@@ -53,10 +53,61 @@ def test_shopping_list_endpoint(client, make_recipe):
             "to_buy": 2,
             "pantry_quantity": None,
             "pantry_unit": None,
+            "source": "plan",
+            "custom_id": None,
+            "est_cost": 3.0,  # two 1 lb boxes at $1.50
+            "price_known": True,
         }
     ]
+    assert data["estimated_total"] == 3.0
+    assert data["budget"] == 75  # default weekly budget
+
+
+def test_custom_groceries_join_the_shopping_list(client):
+    milk = client.post(
+        "/api/groceries", json={"name": "oat milk", "quantity": 1, "unit": "carton", "price": 4.25}
+    ).json()
+    client.post("/api/groceries", json={"name": "dragon fruit"})  # no price, unknown item
+
+    data = client.get("/api/shopping-list", params={"start": WEEK}).json()
+    items = {item["name"]: item for item in data["items"]}
+    assert items["oat milk"]["source"] == "custom"
+    assert items["oat milk"]["custom_id"] == milk["id"]
+    assert items["oat milk"]["est_cost"] == 4.25
+    assert items["dragon fruit"]["price_known"] is False  # default estimate used
+    assert data["estimated_total"] == 4.25 + items["dragon fruit"]["est_cost"]
+
+    assert client.delete(f"/api/groceries/{milk['id']}").status_code == 204
+    assert client.delete(f"/api/groceries/{milk['id']}").status_code == 404
+    assert len(client.get("/api/groceries").json()) == 1
 
 
 def test_shopping_list_empty_week(client):
     data = client.get("/api/shopping-list", params={"start": WEEK}).json()
     assert data["items"] == []
+
+
+def test_shopping_list_scales_to_household_and_skips_staples(client, make_recipe):
+    soup = make_recipe(
+        "Soup",
+        servings=4,
+        ingredients=[
+            {"name": "lentils", "quantity": 2, "unit": "cup"},
+            {"name": "carrots", "quantity": 3, "unit": ""},
+            {"name": "olive oil", "quantity": 2, "unit": "tbsp"},
+        ],
+    )
+    plan_meal(client, "2026-10-13", "dinner", soup["id"])  # profile default: 2 people
+
+    def items():
+        data = client.get("/api/shopping-list", params={"start": WEEK}).json()
+        return {item["name"]: item for item in data["items"]}
+
+    assert items()["lentils"]["quantity"] == 1  # half the recipe
+    assert items()["carrots"]["quantity"] == 2  # 1.5 carrots, rounded up to whole ones
+    assert items()["olive oil"]["status"] == "have"  # a basic, assumed at home
+
+    profile = client.get("/api/profile").json()
+    client.put("/api/profile", json={**profile, "people": 4, "assume_staples": False})
+    assert items()["lentils"]["quantity"] == 2
+    assert items()["olive oil"]["status"] == "buy"

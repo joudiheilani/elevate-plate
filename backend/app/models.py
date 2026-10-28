@@ -67,6 +67,33 @@ class PantryItem(Base):
     unit: Mapped[str] = mapped_column(String(30), default="")
 
 
+class GroceryItem(Base):
+    """An item the user added to their shopping list by hand (not from a planned meal)."""
+
+    __tablename__ = "grocery_items"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120))
+    quantity: Mapped[float | None] = mapped_column(Float, default=None)
+    unit: Mapped[str] = mapped_column(String(30), default="")
+    price: Mapped[float | None] = mapped_column(Float, default=None)
+
+
+class Profile(Base):
+    """Budget and planning preferences. The app has a single profile row (id 1)."""
+
+    __tablename__ = "profile"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    weekly_budget: Mapped[float] = mapped_column(Float, default=75.0)
+    people: Mapped[int] = mapped_column(default=2)
+    max_minutes: Mapped[int | None] = mapped_column(default=30)
+    diet: Mapped[str] = mapped_column(String(20), default="any")
+    meals: Mapped[str] = mapped_column(String(40), default="breakfast,lunch,dinner")
+    mode: Mapped[str] = mapped_column(String(10), default="auto")
+    assume_staples: Mapped[bool] = mapped_column(default=True)
+
+
 class FoodRestriction(Base):
     """An allergy or dislike. Recipes containing it are kept out of suggestions."""
 

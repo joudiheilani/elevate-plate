@@ -9,7 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from .database import Base, SessionLocal, engine, get_db
-from .routers import pantry, plan, recipes, restrictions
+from .routers import generator, groceries, pantry, plan, profile, recipes, restrictions
 from .seed import seed_if_empty
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
@@ -29,11 +29,14 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Meal Planner API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Elevate Plate API", version="2.0.0", lifespan=lifespan)
 app.include_router(recipes.router)
 app.include_router(plan.router)
 app.include_router(pantry.router)
 app.include_router(restrictions.router)
+app.include_router(profile.router)
+app.include_router(groceries.router)
+app.include_router(generator.router)
 
 
 @app.get("/api/health", tags=["health"])

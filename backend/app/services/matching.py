@@ -112,6 +112,19 @@ GROUP_EXCEPTIONS: dict[str, tuple[str, ...]] = {
 }
 
 
+# Diets are applied as extra restrictions on top of the user's allergies and dislikes.
+DIET_EXCLUSIONS: dict[str, tuple[str, ...]] = {
+    "vegetarian": ("Meat", "Fish", "Shellfish"),
+    "vegan": ("Meat", "Fish", "Shellfish", "Dairy", "Eggs", "Honey"),
+    "pescatarian": ("Meat",),
+}
+
+
+def diet_restrictions(diet: str) -> list[FoodRestriction]:
+    """Unsaved restriction objects representing a diet, e.g. vegan -> no dairy, eggs..."""
+    return [FoodRestriction(name=name, kind="diet") for name in DIET_EXCLUSIONS.get(diet, ())]
+
+
 def singularize(word: str) -> str:
     if len(word) > 4 and word.endswith("ies"):
         return word[:-3] + "y"
@@ -132,7 +145,7 @@ def normalize(text: str) -> str:
 
 
 @lru_cache(maxsize=512)
-def _keyword_pattern(keyword: str) -> re.Pattern[str]:
+def keyword_pattern(keyword: str) -> re.Pattern[str]:
     return re.compile(rf"\b{re.escape(keyword)}(?:e?s)?\b")
 
 
@@ -140,7 +153,7 @@ def find_conflicts(recipe: Recipe, restrictions: Iterable[FoodRestriction]) -> l
     conflicts = []
     for restriction in restrictions:
         term = normalize(restriction.name)
-        patterns = [_keyword_pattern(k) for k in FOOD_GROUPS.get(term, (term,))]
+        patterns = [keyword_pattern(k) for k in FOOD_GROUPS.get(term, (term,))]
         exceptions = GROUP_EXCEPTIONS.get(term, ())
         for ingredient in recipe.ingredients:
             text = ingredient.name.lower()
