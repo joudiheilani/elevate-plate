@@ -1,18 +1,21 @@
 import os
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import sessionmaker
+# New accounts normally get sample recipes; tests start from an empty library.
+os.environ.setdefault("SEED_SAMPLE_DATA", "false")
 
-from backend.app.database import Base, get_db, make_engine
-from backend.app.main import app
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy.orm import sessionmaker  # noqa: E402
+
+from backend.app.database import Base, get_db, make_engine  # noqa: E402
+from backend.app.main import app  # noqa: E402
 
 # CI points this at a real Postgres service; locally it defaults to in-memory SQLite.
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite:///:memory:")
 
 
 @pytest.fixture
-def client():
+def db_engine():
     engine = make_engine(TEST_DATABASE_URL)
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
@@ -23,11 +26,39 @@ def client():
             yield db
 
     app.dependency_overrides[get_db] = override_get_db
-    # Not used as a context manager, so the app's startup (create tables + seed) is skipped.
-    yield TestClient(app)
+    yield engine
     app.dependency_overrides.clear()
     Base.metadata.drop_all(engine)
     engine.dispose()
+
+
+@pytest.fixture
+def anon(db_engine):
+    """A client that isn't signed in."""
+    # Not used as a context manager, so the app's startup (create tables) is skipped.
+    return TestClient(app)
+
+
+@pytest.fixture
+def sign_up(db_engine):
+    """Create an account and return a client signed in as it."""
+
+    def _sign_up(email="alice@example.com", password="correct horse battery", name=""):
+        user_client = TestClient(app)
+        response = user_client.post(
+            "/api/auth/signup", json={"email": email, "password": password, "name": name}
+        )
+        assert response.status_code == 201, response.text
+        user_client.headers["Authorization"] = f"Bearer {response.json()['token']}"
+        return user_client
+
+    return _sign_up
+
+
+@pytest.fixture
+def client(sign_up):
+    """A client signed in as a fresh user (most tests just need "a user")."""
+    return sign_up()
 
 
 @pytest.fixture

@@ -71,6 +71,30 @@ Other ways to make prices more accurate later:
 
 An LLM API (such as Claude) could add new recipes beyond the catalog, take preferences in plain language ("high protein, nothing spicy") and suggest substitutions. The trade-offs are a paid API key stored as a secret, a cost for every plan, 5–20 seconds per generation, results that differ each time (harder to test), and unreliable prices. A good next step would be an optional "AI chef" that proposes extra recipes, while this engine keeps doing the budgeting.
 
+## Accounts, iPhone app and installable web app
+
+- **Accounts:** sign up with an email and password. Each account only sees its own
+  recipes, plans, pantry, shopping list and preferences. Passwords are hashed with scrypt;
+  sessions are random tokens stored only as SHA-256 hashes. Accounts can be deleted from
+  the account menu, which permanently removes all their data (an App Store requirement).
+- **One codebase, two apps:** the website (this class project's deliverable) and the
+  iPhone app share the same frontend, API, database and accounts.
+  - **Web:** https://elevate-plate.vercel.app, deployed by Vercel on every push. It's also
+    an installable web app (manifest + service worker): in Safari, Share → Add to Home
+    Screen.
+  - **iPhone:** [`mobile/`](mobile) packages `frontend/` with [Capacitor](https://capacitorjs.com)
+    and calls the live API. A GitHub Actions workflow ([`ios.yml`](.github/workflows/ios.yml))
+    builds it on a GitHub-hosted Mac, so no Mac is needed, and can upload it to App Store
+    Connect. The phone app adds the iOS share sheet, weekly shopping-reminder
+    notifications and haptics.
+- **Offline:** the app's own files (icons and fonts included, nothing loaded from other
+  sites) are cached, and the last data you viewed is saved on the device, so your shopping
+  list still opens in a store with no signal.
+- **Publishing:** see [docs/app-store/CHECKLIST.md](docs/app-store/CHECKLIST.md) for the
+  steps only the developer can do, and [LISTING.md](docs/app-store/LISTING.md) for the
+  store text and privacy answers. Privacy policy:
+  [`frontend/privacy.html`](frontend/privacy.html).
+
 ## Tech stack
 
 | Layer      | Technology                                                        |
@@ -97,7 +121,9 @@ elevate-plate/
 │   └── index.py              # Vercel serverless entry point
 ├── backend/
 │   ├── app/
-│   │   ├── main.py           # FastAPI app, health check, startup
+│   │   ├── main.py           # FastAPI app, CORS, health check, startup
+│   │   ├── deps.py           # DB session + signed-in user dependencies
+│   │   ├── migrations.py     # Idempotent schema upgrades (adds per-user ownership)
 │   │   ├── database.py       # Engine/session setup (DATABASE_URL)
 │   │   ├── models.py         # SQLAlchemy models: Recipe, Ingredient, MealPlanEntry,
 │   │   │                     #   PantryItem, FoodRestriction, GroceryItem, Profile
@@ -107,6 +133,7 @@ elevate-plate/
 │   │   │   ├── catalog.py    # 43 built-in recipes for the generator
 │   │   │   └── prices.py     # Grocery prices (BLS averages + estimates), staples
 │   │   ├── routers/
+│   │   │   ├── auth.py       # /api/auth (sign up, log in, log out, delete account)
 │   │   │   ├── recipes.py    # /api/recipes CRUD and meal ideas
 │   │   │   ├── plan.py       # /api/plan and /api/shopping-list
 │   │   │   ├── pantry.py     # /api/pantry CRUD
@@ -116,6 +143,7 @@ elevate-plate/
 │   │   │   ├── generator.py  # /api/generator (generate & apply a week)
 │   │   │   └── discover.py   # /api/discover (search & import from TheMealDB)
 │   │   └── services/
+│   │       ├── auth.py       # Password hashing and session tokens
 │   │       ├── matching.py   # Name normalisation, allergy & diet groups, pantry matching
 │   │       ├── pricing.py    # Cost estimates and per-ingredient breakdowns
 │   │       ├── units.py      # Unit conversion (weight, volume, density, piece weight)
@@ -124,10 +152,15 @@ elevate-plate/
 │   │       └── generator.py  # Budget-aware meal plan generator
 │   └── tests/                # pytest suite
 ├── frontend/
-│   ├── index.html
-│   ├── styles.css
-│   └── app.js
+│   ├── index.html, styles.css, app.js
+│   ├── privacy.html, support.html, legal.css
+│   ├── manifest.webmanifest, sw.js   # Installable web app
+│   ├── icons/                # App icons
+│   └── vendor/               # Lucide icons + fonts, self-hosted
+├── mobile/                   # iPhone app (Capacitor config, icon and launch screen)
+├── docs/app-store/           # Publishing checklist and App Store listing
 ├── .github/workflows/ci.yml  # Continuous integration
+├── .github/workflows/ios.yml # iPhone build / App Store upload (manual)
 ├── vercel.json               # Vercel routing/build config
 ├── requirements.txt          # Runtime dependencies
 └── requirements-dev.txt      # + test & lint tools
@@ -135,11 +168,19 @@ elevate-plate/
 
 ## API
 
+Every endpoint except `/api/health` and sign-up/login needs an
+`Authorization: Bearer <token>` header and only returns the signed-in user's data.
+
 Interactive docs are served at `/docs` when running locally.
 
 | Method | Endpoint                               | Description                                   |
 | ------ | -------------------------------------- | --------------------------------------------- |
 | GET    | `/api/health`                          | Health check (also checks the DB connection)  |
+| POST   | `/api/auth/signup`                     | Create an account: `{email, password, name}` → `{token, user}` |
+| POST   | `/api/auth/login`                      | Log in → `{token, user}`                      |
+| GET    | `/api/auth/me`                         | The signed-in user                            |
+| POST   | `/api/auth/logout`                     | End this session                              |
+| DELETE | `/api/auth/account`                    | Delete the account and all its data: `{password}` |
 | GET    | `/api/recipes?q=&safe_only=`           | List recipes with cost per serving, a per-ingredient cost breakdown and any diet/allergy/dislike conflicts; `safe_only=true` hides them |
 | GET    | `/api/recipes/ideas`                   | Safe recipes ranked by pantry coverage        |
 | POST   | `/api/recipes`                         | Create a recipe                               |
@@ -178,7 +219,16 @@ pip install -r requirements-dev.txt
 uvicorn backend.app.main:app --reload
 ```
 
-Open http://localhost:8000. With no `DATABASE_URL` set, data is stored in a local SQLite file (`mealplanner.db`). To use Postgres locally, copy `.env.example` to `.env` and set `DATABASE_URL`.
+Open http://localhost:8000 and create an account. With no `DATABASE_URL` set, data is stored in a local SQLite file (`mealplanner.db`). To use Postgres locally, copy `.env.example` to `.env` and set `DATABASE_URL`.
+
+### Settings (environment variables)
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | local SQLite file | Postgres connection string (set automatically by Vercel's Neon integration) |
+| `SEED_SAMPLE_DATA` | `true` | Give new accounts 4 sample recipes |
+| `MEALDB_API_KEY` | `1` (free test key) | TheMealDB key; a supporter key is required for App Store release |
+| `CORS_ORIGINS` | none | Extra allowed origins (the iPhone app's `capacitor://localhost` is always allowed) |
 
 ### Tests and linting
 

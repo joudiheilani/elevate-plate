@@ -9,3 +9,6 @@ venv/
 .DS_Store
 .vercel/
 .claude/
+node_modules/
+mobile/ios/
+mobile/node_modules/

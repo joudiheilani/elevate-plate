@@ -7,6 +7,7 @@ and to the original source when one is listed.
 """
 
 import json
+import os
 import re
 import urllib.parse
 import urllib.request
@@ -15,7 +16,10 @@ from fractions import Fraction
 from ..schemas import IngredientIn
 from .units import VOLUME_ML, WEIGHT_GRAMS, canonical_unit
 
-API_BASE = "https://www.themealdb.com/api/json/v1/1"
+# "1" is TheMealDB's free test key (development and educational use). Publishing on an
+# app store requires a supporter key: set MEALDB_API_KEY in the hosting environment.
+API_KEY = os.getenv("MEALDB_API_KEY", "1")
+API_BASE = f"https://www.themealdb.com/api/json/v1/{API_KEY}"
 MEAL_PAGE = "https://www.themealdb.com/meal/{id}"
 TIMEOUT_SECONDS = 8
 DEFAULT_SERVINGS = 4  # TheMealDB doesn't list servings

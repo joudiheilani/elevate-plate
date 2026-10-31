@@ -1,25 +1,23 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Response, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
-from ..database import get_db
+from ..deps import CurrentUser, DbSession
 from ..models import GroceryItem
 from ..schemas import GroceryItemIn, GroceryItemOut
 
 router = APIRouter(prefix="/api/groceries", tags=["custom groceries"])
-DbSession = Annotated[Session, Depends(get_db)]
 
 
 @router.get("", response_model=list[GroceryItemOut])
-def list_groceries(db: DbSession):
-    return db.scalars(select(GroceryItem).order_by(GroceryItem.id)).all()
+def list_groceries(db: DbSession, user: CurrentUser):
+    return db.scalars(
+        select(GroceryItem).where(GroceryItem.user_id == user.id).order_by(GroceryItem.id)
+    ).all()
 
 
 @router.post("", response_model=GroceryItemOut, status_code=status.HTTP_201_CREATED)
-def add_grocery(payload: GroceryItemIn, db: DbSession):
-    item = GroceryItem(**payload.model_dump())
+def add_grocery(payload: GroceryItemIn, db: DbSession, user: CurrentUser):
+    item = GroceryItem(user_id=user.id, **payload.model_dump())
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -27,9 +25,9 @@ def add_grocery(payload: GroceryItemIn, db: DbSession):
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-def remove_grocery(item_id: int, db: DbSession):
+def remove_grocery(item_id: int, db: DbSession, user: CurrentUser):
     item = db.get(GroceryItem, item_id)
-    if item is None:
+    if item is None or item.user_id != user.id:
         raise HTTPException(status_code=404, detail="Grocery item not found")
     db.delete(item)
     db.commit()

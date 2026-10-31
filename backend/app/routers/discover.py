@@ -1,10 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
 
-from ..database import get_db
+from ..deps import CurrentUser, DbSession
 from ..models import Ingredient, Recipe
 from ..schemas import DiscoveredRecipe, RecipeOut
 from ..services import mealdb
@@ -13,7 +12,6 @@ from ..services.pricing import cost_per_serving
 from .recipes import all_restrictions, build_ingredients, to_recipe_out
 
 router = APIRouter(prefix="/api/discover", tags=["discover recipes (TheMealDB)"])
-DbSession = Annotated[Session, Depends(get_db)]
 MAX_RESULTS = 12
 
 
@@ -25,10 +23,14 @@ def _upstream(call, *args):
 
 
 @router.get("", response_model=list[DiscoveredRecipe])
-def discover(db: DbSession, q: Annotated[str, Query(min_length=2, max_length=60)]):
+def discover(
+    db: DbSession, user: CurrentUser, q: Annotated[str, Query(min_length=2, max_length=60)]
+):
     """Search TheMealDB. Each result gets an estimated cost and diet/allergy check."""
-    restrictions = all_restrictions(db)
-    library = {name.lower() for name in db.scalars(select(Recipe.name))}
+    restrictions = all_restrictions(db, user)
+    library = {
+        name.lower() for name in db.scalars(select(Recipe.name).where(Recipe.user_id == user.id))
+    }
     results = []
     for meal in _upstream(mealdb.search, q.strip())[:MAX_RESULTS]:
         items = mealdb.ingredients(meal)
@@ -57,7 +59,7 @@ def discover(db: DbSession, q: Annotated[str, Query(min_length=2, max_length=60)
 
 
 @router.post("/{meal_id}/import", response_model=RecipeOut, status_code=status.HTTP_201_CREATED)
-def import_meal(meal_id: str, db: DbSession):
+def import_meal(meal_id: str, db: DbSession, user: CurrentUser):
     """Copy a TheMealDB recipe into the library, credited to TheMealDB and its source."""
     if not meal_id.isdigit() or len(meal_id) > 10:
         raise HTTPException(status_code=422, detail="Invalid recipe id")
@@ -65,9 +67,12 @@ def import_meal(meal_id: str, db: DbSession):
     if meal is None:
         raise HTTPException(status_code=404, detail="Recipe not found on TheMealDB")
     name = meal["strMeal"][:200]
-    if db.scalar(select(Recipe).where(func.lower(Recipe.name) == name.lower())):
+    if db.scalar(
+        select(Recipe).where(Recipe.user_id == user.id, func.lower(Recipe.name) == name.lower())
+    ):
         raise HTTPException(status_code=409, detail=f'"{name}" is already in your recipes')
     recipe = Recipe(
+        user_id=user.id,
         name=name,
         description=mealdb.description(meal),
         instructions=mealdb.instructions(meal),
@@ -78,4 +83,4 @@ def import_meal(meal_id: str, db: DbSession):
     db.add(recipe)
     db.commit()
     db.refresh(recipe)
-    return to_recipe_out(recipe, all_restrictions(db))
+    return to_recipe_out(recipe, all_restrictions(db, user))

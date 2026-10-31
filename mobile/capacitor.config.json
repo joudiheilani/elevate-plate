@@ -1,0 +1,9 @@
+{
+  "appId": "com.elevateplate.app",
+  "appName": "Elevate Plate",
+  "webDir": "../frontend",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#f6f1e7"
+  }
+}

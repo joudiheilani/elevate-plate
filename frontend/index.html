@@ -2,21 +2,59 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Elevate Plate</title>
     <meta name="description" content="Plan meals around your budget, diet and cooking time." />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%231fd1a0'/><stop offset='1' stop-color='%230ea5e9'/></linearGradient></defs><circle cx='32' cy='32' r='30' fill='url(%23g)'/><path d='M20 36h24M24 36c0-6 4-12 8-12s8 6 8 12M32 24v-4' stroke='white' stroke-width='4' fill='none' stroke-linecap='round'/></svg>" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+    <meta name="theme-color" content="#ffd43b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Elevate Plate" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+    <link rel="stylesheet" href="vendor/fonts.css" />
     <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdn.jsdelivr.net/npm/lucide@0.454.0/dist/umd/lucide.min.js" defer></script>
+    <script src="vendor/lucide.min.js" defer></script>
   </head>
   <body>
     <div class="bg-shapes" aria-hidden="true">
       <span class="shape s1"></span><span class="shape s2"></span><span class="shape s3"></span>
       <span class="shape s4"></span><span class="shape s5"></span><span class="shape s6"></span>
     </div>
+
+    <!-- Sign in / create account (shown when signed out) -->
+    <section id="auth-screen" class="auth-screen" hidden>
+      <div class="auth-card card">
+        <div class="brand auth-brand">
+          <span class="brand-mark"><i data-lucide="chef-hat"></i></span>
+          <span class="brand-name">Elevate <b>Plate</b></span>
+        </div>
+        <h1 id="auth-title">Welcome back</h1>
+        <p class="subtle" id="auth-subtitle">Sign in to see your recipes, meal plan and shopping list.</p>
+        <div class="segmented auth-switch" role="radiogroup" aria-label="Sign in or create an account">
+          <label><input type="radio" name="auth-mode" value="login" checked /><span>Sign in</span></label>
+          <label><input type="radio" name="auth-mode" value="signup" /><span>Create account</span></label>
+        </div>
+        <form id="auth-form" class="auth-form" novalidate>
+          <label class="auth-field" id="auth-name-field" hidden>Name <span class="subtle">(optional)</span>
+            <input name="name" autocomplete="name" maxlength="80" />
+          </label>
+          <label class="auth-field">Email
+            <input name="email" type="email" autocomplete="email" required maxlength="254" inputmode="email" autocapitalize="off" />
+          </label>
+          <label class="auth-field">Password
+            <input name="password" type="password" autocomplete="current-password" required minlength="8" maxlength="128" />
+          </label>
+          <p class="auth-error" id="auth-error" role="alert" hidden></p>
+          <button class="btn primary big" type="submit" id="auth-submit"><i data-lucide="log-in"></i><span>Sign in</span></button>
+        </form>
+        <p class="hint auth-links">
+          <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> ·
+          <a href="support.html" target="_blank" rel="noopener">Support</a>
+        </p>
+      </div>
+    </section>
 
     <header class="topbar">
       <div class="brand">
@@ -32,10 +70,16 @@
         <button class="tab" data-view="shopping" role="tab"><i data-lucide="shopping-cart"></i><span>Shopping</span></button>
         <button class="tab" data-view="preferences" role="tab"><i data-lucide="sliders-horizontal"></i><span>Diet</span></button>
       </nav>
-      <button class="budget-chip" data-goto="shopping" title="This week's estimated groceries vs. your budget">
-        <i data-lucide="wallet"></i><span id="budget-chip-text">$0 / $0</span>
-      </button>
+      <div class="topbar-actions">
+        <button class="budget-chip" data-goto="shopping" title="This week's estimated groceries vs. your budget">
+          <i data-lucide="wallet"></i><span id="budget-chip-text">$0 / $0</span>
+        </button>
+        <button class="account-btn" id="account-btn" title="Your account" aria-label="Your account">
+          <span id="account-initial">?</span>
+        </button>
+      </div>
     </header>
+    <p class="offline-banner" id="offline-banner" hidden><i data-lucide="wifi-off"></i><span>You're offline. Showing what was last saved on this device.</span></p>
 
     <main>
       <!-- ============ Home ============ -->
@@ -317,7 +361,10 @@
             <h1>Shopping list</h1>
             <p class="subtle" id="shopping-label"></p>
           </div>
-          <button class="btn ghost" id="clear-checked"><i data-lucide="rotate-ccw"></i>Uncheck all</button>
+          <div class="head-actions">
+            <button class="btn primary" id="share-list"><i data-lucide="share"></i>Share list</button>
+            <button class="btn ghost" id="clear-checked"><i data-lucide="rotate-ccw"></i>Uncheck all</button>
+          </div>
         </div>
 
         <div class="card budget-card">
@@ -425,6 +472,49 @@
           <button type="submit" class="btn primary">Save recipe</button>
         </div>
       </form>
+    </dialog>
+
+    <!-- Account -->
+    <dialog id="account-dialog">
+      <div class="account-panel">
+        <div class="account-head">
+          <span class="account-avatar" id="account-avatar">?</span>
+          <div>
+            <h2 id="account-name">Your account</h2>
+            <p class="subtle" id="account-email"></p>
+          </div>
+          <button class="icon-btn" id="close-account" aria-label="Close"><i data-lucide="x"></i></button>
+        </div>
+
+        <div class="account-section" id="reminder-section" hidden>
+          <h3><span class="icon-tile"><i data-lucide="bell"></i></span>Shopping reminder</h3>
+          <p class="subtle">Get a notification each week to check your list and shop.</p>
+          <div class="reminder-row">
+            <label class="switch"><input type="checkbox" id="reminder-on" /><span class="switch-track"></span>Remind me</label>
+            <select id="reminder-day" aria-label="Day">
+              <option value="1">Sunday</option><option value="2">Monday</option><option value="3">Tuesday</option>
+              <option value="4">Wednesday</option><option value="5">Thursday</option><option value="6">Friday</option>
+              <option value="7" selected>Saturday</option>
+            </select>
+            <input type="time" id="reminder-time" value="10:00" aria-label="Time" />
+          </div>
+        </div>
+
+        <div class="account-actions">
+          <button class="btn" id="sign-out"><i data-lucide="log-out"></i>Sign out</button>
+          <a class="btn" href="privacy.html" target="_blank" rel="noopener"><i data-lucide="shield"></i>Privacy</a>
+          <a class="btn" href="support.html" target="_blank" rel="noopener"><i data-lucide="life-buoy"></i>Support</a>
+        </div>
+
+        <details class="danger-zone">
+          <summary><i data-lucide="trash-2"></i>Delete my account</summary>
+          <form id="delete-account-form">
+            <p class="subtle">This permanently deletes your account and everything in it: recipes, meal plans, pantry, shopping items and preferences. It can't be undone.</p>
+            <input name="password" type="password" autocomplete="current-password" placeholder="Enter your password to confirm" required />
+            <button class="btn danger-solid" type="submit"><i data-lucide="trash-2"></i>Delete account permanently</button>
+          </form>
+        </details>
+      </div>
     </dialog>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>

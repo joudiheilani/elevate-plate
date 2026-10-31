@@ -2,3 +2,5 @@
 backend/tests
 *.db
 .env
+mobile
+docs

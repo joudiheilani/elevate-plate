@@ -1,0 +1,25 @@
+/* Simple styles for the privacy policy and support pages. */
+body {
+  margin: 0;
+  background: #f6f1e7;
+  color: #17171c;
+  font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+}
+.legal {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: max(32px, env(safe-area-inset-top)) 20px max(48px, env(safe-area-inset-bottom));
+}
+h1, h2, h3 { font-family: "Space Grotesk", "DM Sans", system-ui, sans-serif; letter-spacing: -0.02em; line-height: 1.2; }
+h1 { font-size: 2.2rem; margin: 16px 0 4px; }
+h2 { font-size: 1.3rem; margin: 32px 0 8px; padding-top: 16px; border-top: 2px solid #17171c; }
+h3 { font-size: 1.05rem; margin: 22px 0 4px; }
+.meta { color: #5f5b66; margin-top: 0; }
+a { color: inherit; font-weight: 700; text-decoration-thickness: 2px; }
+.back {
+  display: inline-block; text-decoration: none; padding: 6px 12px; border: 2px solid #17171c; border-radius: 10px;
+  background: #ffd43b; box-shadow: 3px 3px 0 #17171c; font-family: "Space Grotesk", sans-serif;
+}
+ul { padding-left: 1.2rem; }
+li { margin-bottom: 6px; }

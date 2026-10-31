@@ -1,0 +1,21 @@
+{
+  "name": "elevate-plate-ios",
+  "private": true,
+  "version": "1.0.0",
+  "description": "iPhone app for Elevate Plate: the web app's frontend packaged with Capacitor.",
+  "scripts": {
+    "assets": "capacitor-assets generate --ios --iconBackgroundColor '#ffd43b' --splashBackgroundColor '#f6f1e7'",
+    "sync": "cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.6.0",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/ios": "8.6.0",
+    "@capacitor/local-notifications": "8.3.1",
+    "@capacitor/share": "8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "4.0.0",
+    "@capacitor/cli": "8.6.0"
+  }
+}

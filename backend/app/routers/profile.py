@@ -1,24 +1,19 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..database import get_db
-from ..models import Profile
+from ..deps import CurrentUser, DbSession
+from ..models import Profile, User
 from ..schemas import ProfileData
 
 router = APIRouter(prefix="/api/profile", tags=["profile & budget"])
-DbSession = Annotated[Session, Depends(get_db)]
-
-PROFILE_ID = 1
 
 
-def get_profile(db: Session) -> Profile:
-    """The app's single profile row, created with defaults on first use."""
-    profile = db.get(Profile, PROFILE_ID)
+def get_profile(db: Session, user: User) -> Profile:
+    """The user's profile row, created with defaults on first use."""
+    profile = db.scalar(select(Profile).where(Profile.user_id == user.id))
     if profile is None:
-        defaults = ProfileData()
-        profile = Profile(id=PROFILE_ID, **_to_columns(defaults))
+        profile = Profile(user_id=user.id, **_to_columns(ProfileData()))
         db.add(profile)
         db.commit()
     return profile
@@ -41,13 +36,13 @@ def to_profile_data(profile: Profile) -> ProfileData:
 
 
 @router.get("", response_model=ProfileData)
-def read_profile(db: DbSession):
-    return to_profile_data(get_profile(db))
+def read_profile(db: DbSession, user: CurrentUser):
+    return to_profile_data(get_profile(db, user))
 
 
 @router.put("", response_model=ProfileData)
-def update_profile(payload: ProfileData, db: DbSession):
-    profile = get_profile(db)
+def update_profile(payload: ProfileData, db: DbSession, user: CurrentUser):
+    profile = get_profile(db, user)
     for field, value in _to_columns(payload).items():
         setattr(profile, field, value)
     db.commit()

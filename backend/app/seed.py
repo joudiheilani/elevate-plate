@@ -68,14 +68,14 @@ SAMPLE_RECIPES = [
 ]
 
 
-def seed_if_empty(db: Session) -> None:
-    """Insert a few sample recipes so a fresh deployment isn't empty."""
-    if db.scalar(select(func.count()).select_from(Recipe)):
+def seed_for_user(db: Session, user_id: int) -> None:
+    """Give a new account a few sample recipes, so its library isn't empty."""
+    existing = db.scalar(select(func.count()).select_from(Recipe).where(Recipe.user_id == user_id))
+    if existing:
         return
     for data in SAMPLE_RECIPES:
         ingredients = [
             Ingredient(name=name, quantity=quantity, unit=unit, position=position)
             for position, (name, quantity, unit) in enumerate(data["ingredients"])
         ]
-        db.add(Recipe(**{**data, "ingredients": ingredients}))
-    db.commit()
+        db.add(Recipe(**{**data, "user_id": user_id, "ingredients": ingredients}))

@@ -275,12 +275,48 @@ function toast(message, isError = false) {
   toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
 }
 
+// The iPhone app bundles these files and calls the live API; the website uses its own origin.
+const NATIVE = window.Capacitor?.isNativePlatform?.() === true;
+const Native = window.Capacitor?.Plugins ?? {};
+const API_BASE = NATIVE ? "https://elevate-plate.vercel.app" : "";
+const TOKEN_KEY = "ep-token";
+let authToken = readSetting(TOKEN_KEY, null);
+
+/** Thrown when the session is missing or expired; the sign-in screen is already showing. */
+class SignedOutError extends Error {}
+
+function cacheKey(path) {
+  return `ep-cache:${state.user?.id ?? "me"}:${path}`;
+}
+
+function setOffline(offline) {
+  $("#offline-banner").hidden = !offline;
+}
+
 async function api(path, options = {}) {
-  const response = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  const method = (options.method || "GET").toUpperCase();
+  let response;
+  try {
+    response = await fetch(API_BASE + path, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+  } catch {
+    // No connection: reads fall back to the last copy saved on this device.
+    setOffline(true);
+    const cached = method === "GET" ? readSetting(cacheKey(path), undefined) : undefined;
+    if (cached !== undefined) return cached;
+    throw new Error("You're offline. Connect to the internet and try again.");
+  }
+  setOffline(false);
+  if (response.status === 401 && !path.startsWith("/api/auth/login")) {
+    signedOut();
+    throw new SignedOutError("Please sign in.");
+  }
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
     try {
@@ -290,7 +326,9 @@ async function api(path, options = {}) {
     } catch { /* non-JSON error body */ }
     throw new Error(message);
   }
-  return response.status === 204 ? null : response.json();
+  const data = response.status === 204 ? null : await response.json();
+  if (method === "GET") writeSetting(cacheKey(path), data);
+  return data;
 }
 
 async function run(action, successMessage) {
@@ -298,8 +336,14 @@ async function run(action, successMessage) {
     await action();
     if (successMessage) toast(successMessage);
   } catch (err) {
-    toast(err.message, true);
+    if (!(err instanceof SignedOutError)) toast(err.message, true);
   }
+}
+
+/** A light tap on iPhone; a short buzz where the web supports it. */
+function haptic() {
+  if (NATIVE) Native.Haptics?.impact({ style: "LIGHT" }).catch(() => {});
+  else navigator.vibrate?.(12);
 }
 
 // =====================================================================
@@ -1051,7 +1095,7 @@ $("#pantry-list").addEventListener("click", (event) => {
 // =====================================================================
 
 function checkedKey() {
-  return `shopping-checked:${isoDate(state.weekStart)}`;
+  return `shopping-checked:${state.user?.id}:${isoDate(state.weekStart)}`;
 }
 
 async function renderShopping() {
@@ -1127,6 +1171,7 @@ $("#shopping-list").addEventListener("change", (event) => {
   box.checked ? checked.add(box.dataset.key) : checked.delete(box.dataset.key);
   writeSetting(checkedKey(), [...checked]);
   box.closest("li").classList.toggle("checked", box.checked);
+  haptic();
   const remaining = $$("#shopping-list input[data-key]").filter((b) => !b.checked).length;
   if (box.checked && remaining === 0) {
     confetti(box);
@@ -1292,10 +1337,218 @@ window.addEventListener("resize", moveTabIndicator);
 // Start
 // =====================================================================
 
+// =====================================================================
+// Accounts
+// =====================================================================
+
+function authMode() {
+  return document.querySelector('input[name="auth-mode"]:checked').value;
+}
+
+function renderAuthMode() {
+  const signup = authMode() === "signup";
+  $("#auth-title").textContent = signup ? "Create your account" : "Welcome back";
+  $("#auth-subtitle").textContent = signup
+    ? "Save your recipes, plans and shopping lists, on the web and on your phone."
+    : "Sign in to see your recipes, meal plan and shopping list.";
+  $("#auth-name-field").hidden = !signup;
+  $("#auth-submit span").textContent = signup ? "Create account" : "Sign in";
+  $("#auth-form").elements.password.autocomplete = signup ? "new-password" : "current-password";
+  $("#auth-error").hidden = true;
+}
+
+function showAuth() {
+  document.body.classList.add("signed-out");
+  $("#auth-screen").hidden = false;
+  renderAuthMode();
+  refreshIcons();
+}
+
+function signedOut() {
+  authToken = null;
+  writeSetting(TOKEN_KEY, null);
+  Object.assign(state, { user: null, recipes: [], plan: [], pantry: [], restrictions: [], profile: null, shopping: null, generated: null });
+  draft.loaded = false;
+  $("#account-dialog").open && $("#account-dialog").close();
+  showAuth();
+}
+
+function renderAccount() {
+  const { name, email } = state.user;
+  const initial = (name || email || "?").trim()[0].toUpperCase();
+  $("#account-initial").textContent = initial;
+  $("#account-avatar").textContent = initial;
+  $("#account-name").textContent = name || "Your account";
+  $("#account-email").textContent = email;
+  renderReminder();
+}
+
+async function boot() {
+  state.user = await api("/api/auth/me");
+  document.body.classList.remove("signed-out");
+  $("#auth-screen").hidden = true;
+  renderAccount();
+  await reload("profile", "recipes", "plan", "pantry", "restrictions", "shopping");
+  switchView("home");
+}
+
+$$('input[name="auth-mode"]').forEach((radio) => radio.addEventListener("change", renderAuthMode));
+
+$("#auth-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const f = event.target.elements;
+  const mode = authMode();
+  const email = f.email.value.trim();
+  const password = f.password.value;
+  const error = $("#auth-error");
+  const fail = (message) => { error.textContent = message; error.hidden = false; };
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail("Enter a valid email address.");
+  if (mode === "signup" && password.length < 8) return fail("Use at least 8 characters for your password.");
+  if (!password) return fail("Enter your password.");
+
+  const button = $("#auth-submit");
+  setGenerating(button, true, mode === "signup" ? "Creating account..." : "Signing in...");
+  try {
+    const result = await api(`/api/auth/${mode}`, {
+      method: "POST",
+      body: mode === "signup" ? { email, password, name: f.name.value.trim() } : { email, password },
+    });
+    authToken = result.token;
+    writeSetting(TOKEN_KEY, authToken);
+    f.password.value = "";
+    await boot();
+    toast(mode === "signup" ? "Welcome to Elevate Plate!" : `Welcome back${result.user.name ? `, ${result.user.name}` : ""}!`);
+  } catch (err) {
+    if (!(err instanceof SignedOutError)) fail(err.message);
+  } finally {
+    setGenerating(button, false, mode === "signup" ? "Create account" : "Sign in");
+  }
+});
+
+$("#account-btn").addEventListener("click", () => {
+  renderAccount();
+  $("#account-dialog").showModal();
+  refreshIcons();
+});
+$("#close-account").addEventListener("click", () => $("#account-dialog").close());
+
+$("#sign-out").addEventListener("click", async () => {
+  try {
+    await api("/api/auth/logout", { method: "POST" });
+  } catch { /* signing out locally is what matters */ }
+  signedOut();
+  toast("Signed out");
+});
+
+$("#delete-account-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const password = event.target.elements.password.value;
+  if (!confirm("Delete your account and all your data permanently? This can't be undone.")) return;
+  const userId = state.user.id;
+  run(async () => {
+    await api("/api/auth/account", { method: "DELETE", body: { password } });
+    event.target.reset();
+    // Forget anything cached on this device for this account.
+    try {
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith(`ep-cache:${userId}:`) || key.startsWith(`shopping-checked:${userId}:`))
+        .forEach((key) => localStorage.removeItem(key));
+    } catch { /* storage unavailable */ }
+    signedOut();
+    toast("Your account and data were deleted.");
+  });
+});
+
+// =====================================================================
+// Sharing & reminders (phone features)
+// =====================================================================
+
+function shoppingListText() {
+  const toBuy = (state.shopping?.items ?? []).filter((item) => item.status !== "have");
+  const lines = toBuy.map((item) => {
+    const qty = formatQuantity(item.to_buy, item.unit);
+    return `- ${qty ? `${qty} ` : ""}${item.name}`;
+  });
+  return [
+    `Shopping list for ${weekLabel()}`,
+    "",
+    ...(lines.length ? lines : ["(nothing to buy)"]),
+    "",
+    `Estimated total: ${money(state.shopping?.estimated_total ?? 0)}`,
+    "Made with Elevate Plate",
+  ].join("\n");
+}
+
+$("#share-list").addEventListener("click", async () => {
+  const text = shoppingListText();
+  try {
+    if (NATIVE && Native.Share) {
+      await Native.Share.share({ title: "Shopping list", text, dialogTitle: "Share your shopping list" });
+    } else if (navigator.share) {
+      await navigator.share({ title: "Shopping list", text });
+    } else {
+      await navigator.clipboard.writeText(text);
+      toast("Shopping list copied. Paste it anywhere.");
+    }
+  } catch (err) {
+    if (err?.name !== "AbortError" && !/cancel/i.test(err?.message ?? "")) toast("Couldn't share the list.", true);
+  }
+});
+
+const REMINDER_ID = 1001;
+const REMINDER_KEY = "ep-reminder";
+
+function renderReminder() {
+  const supported = NATIVE && Boolean(Native.LocalNotifications);
+  $("#reminder-section").hidden = !supported;
+  if (!supported) return;
+  const settings = readSetting(REMINDER_KEY, { on: false, day: "7", time: "10:00" });
+  $("#reminder-on").checked = settings.on;
+  $("#reminder-day").value = settings.day;
+  $("#reminder-time").value = settings.time;
+}
+
+async function saveReminder() {
+  const settings = { on: $("#reminder-on").checked, day: $("#reminder-day").value, time: $("#reminder-time").value || "10:00" };
+  const notifications = Native.LocalNotifications;
+  await notifications.cancel({ notifications: [{ id: REMINDER_ID }] }).catch(() => {});
+  if (settings.on) {
+    const permission = await notifications.requestPermissions();
+    if (permission.display !== "granted") {
+      $("#reminder-on").checked = false;
+      settings.on = false;
+      toast("Notifications are off for Elevate Plate. Turn them on in Settings to get reminders.", true);
+    } else {
+      const [hour, minute] = settings.time.split(":").map(Number);
+      await notifications.schedule({
+        notifications: [{
+          id: REMINDER_ID,
+          title: "Time to shop",
+          body: "Your Elevate Plate shopping list is ready for this week.",
+          schedule: { on: { weekday: Number(settings.day), hour, minute }, allowWhileIdle: true },
+        }],
+      });
+      toast("Weekly reminder set");
+    }
+  }
+  writeSetting(REMINDER_KEY, settings);
+}
+
+["#reminder-on", "#reminder-day", "#reminder-time"].forEach((selector) =>
+  $(selector).addEventListener("change", () => run(saveReminder)));
+
+// =====================================================================
+// Start
+// =====================================================================
+
 window.addEventListener("load", () => { refreshIcons(); moveTabIndicator(); }); // lucide loads with `defer`
 document.fonts?.ready.then(moveTabIndicator);
-moveTabIndicator();
-run(async () => {
-  await reload("profile", "recipes", "plan", "pantry", "restrictions", "shopping");
-  await renderCurrentView();
-});
+window.addEventListener("online", () => { if (state.user) run(() => reload("recipes", "plan", "pantry", "shopping")); });
+
+// The website works offline as an installable app; the iPhone app already has its files.
+if (!NATIVE && "serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+
+if (authToken) run(boot);
+else showAuth();
