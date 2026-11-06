@@ -299,6 +299,7 @@ class GenerateRequest(BaseModel):
     assume_staples: bool = True  # oil and spices are already at home
     fill_gaps: bool = False  # keep meals already planned that week; only fill empty slots
     macro_goals: MacroGoals | None = None  # daily targets per person to plan around
+    use_library: bool = True  # also pick from your own saved recipes
     seed: int | None = None  # same seed + same inputs = same plan; change it to reshuffle
 
 
@@ -311,6 +312,7 @@ class PlanRecipe(BaseModel):
     ingredients: list[IngredientIn]
     cost_per_serving: float
     nutrition: Nutrition = Nutrition()  # per serving
+    source: Literal["catalog", "library"] = "catalog"  # library = one of your saved recipes
 
 
 class GeneratedMeal(BaseModel):

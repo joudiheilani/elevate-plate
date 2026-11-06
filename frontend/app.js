@@ -623,6 +623,7 @@ async function generate({ reshuffle = false } = {}) {
       assume_staples: draft.assume_staples,
       fill_gaps: state.profile.mode === "hybrid",
       macro_goals: macroGoals(),
+      use_library: $("#gen-use-library").checked,
       seed: state.generatorSeed,
     },
   });
@@ -724,7 +725,11 @@ function renderGenerated() {
             <div class="meal-meta">${m.cost != null ? `<span>${icon("wallet")}${money(m.cost)}</span>` : ""}</div>
           </div>`;
       }
-      const mine = m.locked ? `<span class="mine" title="You planned this">${icon("pin")}Yours</span>` : "";
+      const mine = m.locked
+        ? `<span class="mine" title="You planned this">${icon("pin")}Yours</span>`
+        : m.recipe.source === "library"
+          ? `<span class="mine" title="One of your saved recipes">${icon("bookmark")}Saved</span>`
+          : "";
       const time = m.recipe.prep_minutes != null ? `<span>${icon("clock")}${m.recipe.prep_minutes}m</span>` : "";
       const n = m.nutrition?.calories ? m.nutrition : m.recipe.nutrition;
       const kcal = n?.calories ? `<span>${icon("flame")}${Math.round(n.calories)} kcal</span>` : "";

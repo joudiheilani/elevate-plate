@@ -209,6 +209,22 @@ FOODS: dict[str, Food] = {
     "vinegar": Food(18, 0, 0.04, 0, g_per_cup=240),
     "coconut": Food(354, 3.3, 15.0, 33.0, g_per_cup=80),
     "sesame seed": Food(573, 18.0, 23.0, 50.0, g_per_cup=144),
+    # ---------- Added with the November 2026 recipes ----------
+    "cottage cheese": Food(98, 11.0, 3.4, 4.3, g_per_cup=226),
+    "chia seed": Food(486, 17.0, 42.0, 31.0, g_per_cup=170),
+    "mango": Food(60, 0.8, 15.0, 0.4, g_per_cup=165, g_each=200),
+    "almond butter": Food(614, 21.0, 19.0, 56.0, g_per_cup=256),
+    "deli turkey": Food(104, 17.0, 4.0, 2.0, per_unit={"slice": 28}),
+    "pesto": Food(430, 5.0, 6.0, 43.0, g_per_cup=250),
+    "edamame": Food(121, 12.0, 9.0, 5.0, g_per_cup=155),
+    "tahini": Food(595, 17.0, 21.0, 54.0, g_per_cup=240),
+    "teriyaki sauce": Food(89, 6.0, 16.0, 0, g_per_cup=290),
+    "bbq sauce": Food(172, 0.8, 41.0, 0.6, g_per_cup=280),
+    "eggplant": Food(25, 1.0, 6.0, 0.2, g_per_cup=82, g_each=450),
+    "naan": Food(290, 9.0, 50.0, 6.0, g_each=90),
+    "hamburger bun": Food(279, 9.5, 50.0, 4.0, g_each=52),
+    "pork chop": Food(170, 21.0, 0, 9.0, g_each=200),
+    "ground pork": Food(263, 17.0, 0, 21.0, g_per_cup=225),
 }
 
 # Things used in amounts too small to matter for macros (or with none at all).

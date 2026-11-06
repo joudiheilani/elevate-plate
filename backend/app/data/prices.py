@@ -244,6 +244,22 @@ PRICES: dict[str, Price] = {
     "olive": Price(6, "oz", 3.50),
     "peanut": Price(16, "oz", 3.50, g_per_cup=146),
     "cannellini bean": Price(1, "can", 1.20),
+    # ---------- Estimates: added with the November 2026 recipes ----------
+    "cottage cheese": Price(16, "oz", 3.50, g_per_cup=226),
+    "chia seed": Price(12, "oz", 5.00, g_per_cup=170),
+    "mango": Price(16, "oz", 3.50, g_per_cup=165, g_each=200),  # frozen chunks
+    "almond butter": Price(12, "oz", 7.00, g_per_cup=256),
+    "deli turkey": Price(9, "oz", 4.50),
+    "pesto": Price(6.5, "oz", 4.00, g_per_cup=250),
+    "edamame": Price(12, "oz", 3.00, g_per_cup=155),  # frozen, shelled
+    "tahini": Price(16, "oz", 6.00, g_per_cup=240),
+    "teriyaki sauce": Price(10, "fl oz", 3.50),
+    "bbq sauce": Price(18, "oz", 2.50, g_per_cup=280),
+    "eggplant": Price(1, "", 1.75),
+    "naan": Price(4, "", 4.00),
+    "hamburger bun": Price(8, "", 2.50),
+    "pork chop": Price(1, "lb", 4.50),
+    "ground pork": Price(1, "lb", 4.00, g_per_cup=225),
 }
 
 # Long-lasting basics most kitchens already have. The generator assumes these are at

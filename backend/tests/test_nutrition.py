@@ -191,3 +191,13 @@ def test_portions_are_saved_and_bought_for(client):
         json={"day": meal["day"], "meal_type": meal["meal_type"], "recipe_id": recipe_id},
     )
     assert client.get(f"/api/plan?start={WEEK}").json()[0]["portions"] == 1
+
+
+def test_every_catalog_recipe_has_full_nutrition():
+    """Keeps the catalog and nutrition table in sync, so macros aren't silently partial."""
+    from backend.app.data.catalog import CATALOG
+
+    for entry in CATALOG:
+        n = estimate(entry.to_model())
+        assert n.missing == [], (entry.name, n.missing)
+        assert 100 < n.calories < 1100, (entry.name, n.calories)

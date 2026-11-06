@@ -171,3 +171,44 @@ def test_fill_gaps_with_full_week(client, make_recipe):
     plan = generate(client, fill_gaps=True, meals=["breakfast"])
     assert all(m["locked"] for m in plan["meals"])
     assert any("already fill every slot" in n for n in plan["notes"])
+
+
+def test_uses_saved_recipes(client, make_recipe):
+    mine = make_recipe(
+        "Grandma's Lentil Stew",
+        [
+            {"name": "lentils", "quantity": 1, "unit": "cup"},
+            {"name": "carrots", "quantity": 2, "unit": ""},
+            {"name": "onion", "quantity": 1, "unit": ""},
+        ],
+        prep_minutes=30,
+        servings=4,
+    )
+    plans = [generate(client, seed=seed, meals=["dinner"]) for seed in range(6)]
+    picked = [m for plan in plans for m in plan["meals"] if m["recipe"]["name"] == mine["name"]]
+    assert picked, "a cheap saved recipe should get picked at least once"
+    assert picked[0]["recipe"]["source"] == "library"
+    assert picked[0]["meal_type"] == "dinner"  # no history: lunch and dinner
+
+    without = [generate(client, seed=s, meals=["dinner"], use_library=False) for s in range(6)]
+    assert all(m["recipe"]["source"] == "catalog" for p in without for m in p["meals"])
+
+
+def test_saved_recipe_without_time_is_skipped_under_a_time_limit(client, make_recipe):
+    make_recipe("Mystery Stew", [{"name": "lentils", "quantity": 1, "unit": "cup"}])
+    plan = generate(client, max_minutes=30)
+    assert all(m["recipe"]["name"] != "Mystery Stew" for m in plan["meals"])
+    assert any("no cooking time" in note for note in plan["notes"])
+
+
+def test_saved_breakfast_names_go_to_breakfast(client, make_recipe):
+    from backend.app.models import Recipe
+    from backend.app.routers.generator import _meal_types
+
+    assert _meal_types(Recipe(id=1, name="Banana Pancakes"), {}) == ("breakfast",)
+    assert _meal_types(Recipe(id=1, name="Goat Cheese Salad"), {}) == ("lunch", "dinner")
+    assert _meal_types(Recipe(id=1, name="Anything"), {1: {"dinner", "breakfast"}}) == (
+        "breakfast",
+        "dinner",
+    )
+    assert _meal_types(Recipe(id=2, name="Huevos Rancheros"), {}) == ("breakfast", "lunch")

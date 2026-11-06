@@ -1,7 +1,9 @@
 """Builds a week of meals that fits a budget, time limit, diet and allergies.
 
 Approach:
-1. Keep catalog recipes that fit the time limit and don't conflict with any restriction.
+1. Keep catalog recipes, and the user's own saved recipes, that fit the time limit and
+   don't conflict with any restriction. A saved recipe with the same name as a catalog
+   one replaces it (the user may have edited it).
 2. Meals the user already planned (in "mix" mode) are locked in: they count toward the
    grocery list and budget, but are never swapped out. Only the open slots get filled.
 3. Fill each open slot (day x meal) greedily. A recipe is scored on its *extra* grocery
@@ -92,6 +94,7 @@ def _candidate(
     people: int,
     pantry_names: set[str],
     portions: float = 1.0,
+    source: str = "catalog",
 ) -> _Candidate:
     have, _ = pantry_coverage(model, pantry_names)
     per_serving = cost_per_serving(model)
@@ -117,6 +120,7 @@ def _candidate(
             ],
             cost_per_serving=per_serving,
             nutrition=nutrition,
+            source=source,
         ),
     )
 
@@ -139,21 +143,44 @@ def _with_portions(candidate: _Candidate, portions: float) -> _Candidate:
     )
 
 
-def _catalog_candidates(
-    req: GenerateRequest, restrictions: Sequence[FoodRestriction], pantry_names: set[str]
-) -> list[_Candidate]:
-    candidates = []
+def _candidates(
+    req: GenerateRequest,
+    restrictions: Sequence[FoodRestriction],
+    pantry_names: set[str],
+    library: Sequence[tuple[Recipe, tuple[str, ...]]] = (),
+) -> tuple[list[_Candidate], int]:
+    """Recipes the generator may pick, and how many saved recipes were skipped only
+    because they have no cooking time while a time limit is set."""
+    sources: list[tuple[Recipe, tuple[str, ...], str]] = []
+    untimed = 0
+    for recipe, meal_types in library:
+        if not recipe.ingredients or not meal_types:
+            continue  # nothing to shop for or price (e.g. a takeout entry)
+        if req.max_minutes is not None:
+            if recipe.prep_minutes is None:
+                untimed += 1
+                continue
+            if recipe.prep_minutes > req.max_minutes:
+                continue
+        sources.append((recipe, meal_types, "library"))
+    saved_names = {recipe.name.lower() for recipe, _, _ in sources}
     for entry in CATALOG:
+        if entry.name.lower() in saved_names:
+            continue
         if req.max_minutes is not None and entry.prep_minutes > req.max_minutes:
             continue
-        model = entry.to_model()
+        sources.append((entry.to_model(), entry.meal_types, "catalog"))
+
+    candidates = []
+    with_portions = bool(req.macro_goals and req.macro_goals.targets())
+    for model, meal_types, source in sources:
         if find_conflicts(model, restrictions):
             continue
-        candidate = _candidate(model, entry.meal_types, req.people, pantry_names)
+        candidate = _candidate(model, meal_types, req.people, pantry_names, source=source)
         candidates.append(candidate)
-        if req.macro_goals and req.macro_goals.targets():
+        if with_portions:
             candidates += [_with_portions(candidate, p) for p in GOAL_PORTIONS if p != 1.0]
-    return candidates
+    return candidates, untimed
 
 
 def _groceries(
@@ -248,16 +275,18 @@ def generate_plan(
     pantry: Sequence[PantryItem],
     planned: Sequence[tuple[dt.date, str, Recipe, float]] = (),
     dining_out: Sequence[DiningOut] = (),
+    library: Sequence[tuple[Recipe, tuple[str, ...]]] = (),
 ) -> GeneratedPlan:
-    """Generate a week. `planned` are the user's own meals to keep (mix mode), and
-    `dining_out` the slots they're eating out for (left empty)."""
+    """Generate a week. `planned` are the user's own meals to keep (mix mode),
+    `dining_out` the slots they're eating out for (left empty), and `library` their saved
+    recipes with the meals each suits, to choose from alongside the catalog."""
     rng = random.Random(req.seed)
     goals = req.macro_goals.targets() if req.macro_goals else {}
     pantry = list(pantry) if req.use_pantry else []
     if req.assume_staples:
         pantry += staple_items()
     pantry_names = {normalize(item.name) for item in pantry}
-    candidates = _catalog_candidates(req, restrictions, pantry_names)
+    candidates, untimed = _candidates(req, restrictions, pantry_names, library)
 
     locked = [
         _Slot(
@@ -377,6 +406,12 @@ def generate_plan(
             f"filled {generated} open slot{'s' if generated != 1 else ''}."
             if generated
             else f"Your {len(locked)} planned meals already fill every slot you asked for.",
+        )
+    if untimed:
+        notes.append(
+            f"{untimed} of your saved recipes {'has' if untimed == 1 else 'have'} no cooking "
+            "time, so we left them out to respect your time limit. Add a time on the Recipes "
+            "tab to include them."
         )
     if dining_out:
         count = len(dining_out)
