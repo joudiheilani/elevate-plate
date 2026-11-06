@@ -109,6 +109,14 @@ GROUP_EXCEPTIONS: dict[str, tuple[str, ...]] = {
         "soy milk",
         "rice milk",
     ),
+    # Naturally gluten-free foods whose names contain a gluten word.
+    "gluten": (
+        "corn tortilla",
+        "rice noodle",
+        "buckwheat",
+        "gluten-free",
+        "gluten free",
+    ),
 }
 
 

@@ -933,6 +933,141 @@ CATALOG: tuple[CatalogRecipe, ...] = (
         "Simmer the oats in milk for 5 minutes. Stir in the peanut butter, then top with "
         "sliced banana and a spoonful of yogurt.",
     ),
+    # ----- Breakfasts free of the common allergens (dairy, gluten, eggs, nuts, peanuts,
+    # soy, fish, shellfish), so restricted diets still get variety -----
+    CatalogRecipe(
+        "Apple Cinnamon Overnight Oats",
+        "Dairy-free oats that soak overnight in oat milk.",
+        (B,),
+        5,
+        1,
+        (
+            ("rolled oats", 0.5, "cup"),
+            ("oat milk", 0.75, "cup"),
+            ("chia seeds", 1, "tbsp"),
+            ("apple", 0.5, ""),
+            ("maple syrup", 1, "tbsp"),
+            ("cinnamon", None, ""),
+        ),
+        "Stir the oats, oat milk, chia seeds, maple syrup and cinnamon in a jar and chill "
+        "overnight. Top with diced apple.",
+    ),
+    CatalogRecipe(
+        "Banana Berry Smoothie Bowl",
+        "A thick, dairy-free bowl with a crunchy oat topping.",
+        (B,),
+        5,
+        1,
+        (
+            ("banana", 1, ""),
+            ("frozen berries", 1, "cup"),
+            ("oat milk", 0.5, "cup"),
+            ("chia seeds", 1, "tbsp"),
+            ("rolled oats", 2, "tbsp"),
+        ),
+        "Blend the banana, berries and oat milk until thick. Pour into a bowl and top with "
+        "chia seeds and oats.",
+    ),
+    CatalogRecipe(
+        "Black Bean Breakfast Skillet",
+        "Crispy potatoes, beans and peppers with avocado.",
+        (B, L),
+        25,
+        2,
+        (
+            ("potatoes", 2, ""),
+            ("black beans", 1, "can"),
+            ("bell pepper", 1, ""),
+            ("onion", 0.5, ""),
+            ("salsa", 0.5, "cup"),
+            ("avocado", 1, ""),
+            ("olive oil", 1, "tbsp"),
+        ),
+        "Cook the diced potatoes in oil for 12 minutes, add the onion and pepper until soft, "
+        "then the beans until hot. Top with salsa and sliced avocado.",
+    ),
+    CatalogRecipe(
+        "Turkey Sweet Potato Hash",
+        "A protein-packed hash with no eggs needed.",
+        (B, D),
+        25,
+        2,
+        (
+            ("ground turkey", 0.5, "lb"),
+            ("sweet potatoes", 2, ""),
+            ("spinach", 2, "cup"),
+            ("onion", 0.5, ""),
+            ("olive oil", 1, "tbsp"),
+            ("paprika", None, ""),
+        ),
+        "Cook the diced sweet potato in oil for 10 minutes, add the turkey, onion and paprika "
+        "and brown, then wilt in the spinach.",
+    ),
+    CatalogRecipe(
+        "Blueberry Quinoa Breakfast Bowl",
+        "Warm quinoa simmered in oat milk with fruit.",
+        (B,),
+        20,
+        2,
+        (
+            ("quinoa", 0.5, "cup"),
+            ("oat milk", 1, "cup"),
+            ("blueberries", 0.5, "cup"),
+            ("banana", 1, ""),
+            ("maple syrup", 1, "tbsp"),
+            ("cinnamon", None, ""),
+        ),
+        "Simmer the rinsed quinoa in oat milk with cinnamon for 15 minutes. Top with "
+        "blueberries, sliced banana and maple syrup.",
+    ),
+    CatalogRecipe(
+        "Coconut Mango Chia Pudding",
+        "Creamy, tropical and dairy-free.",
+        (B,),
+        5,
+        2,
+        (
+            ("chia seeds", 0.25, "cup"),
+            ("coconut milk", 1, "cup"),
+            ("mango", 1, "cup"),
+            ("maple syrup", 1, "tbsp"),
+        ),
+        "Whisk the chia seeds, coconut milk and maple syrup, stir again after 10 minutes, and "
+        "chill overnight. Top with diced mango.",
+    ),
+    CatalogRecipe(
+        "Ginger Chicken Rice Porridge",
+        "A soothing, savory rice porridge (congee-style).",
+        (B, L),
+        40,
+        2,
+        (
+            ("rice", 0.5, "cup"),
+            ("chicken broth", 4, "cup"),
+            ("ground chicken", 0.5, "lb"),
+            ("ginger", 1, ""),
+            ("green onion", 1, "bunch"),
+        ),
+        "Simmer the rice in the broth with sliced ginger for 30 minutes, stirring now and "
+        "then, until thick. Stir in the chicken in small pieces until cooked and top with "
+        "green onion.",
+    ),
+    CatalogRecipe(
+        "Sweet Potato Toasts with Beans",
+        "Toasted sweet potato slices instead of bread.",
+        (B,),
+        15,
+        2,
+        (
+            ("sweet potatoes", 1, ""),
+            ("black beans", 0.5, "can"),
+            ("avocado", 1, ""),
+            ("tomato", 1, ""),
+            ("lime", 0.5, ""),
+        ),
+        "Slice the sweet potato lengthwise about 1/4 inch thick and toast 2 or 3 times until "
+        "tender. Top with mashed avocado and lime, warm beans and diced tomato.",
+    ),
     # ----- Lunch -----
     CatalogRecipe(
         "Turkey Avocado Wraps",

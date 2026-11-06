@@ -38,7 +38,7 @@ A budget-aware meal planner. Plan your week yourself, or have Elevate Plate gene
 
 ## How the meal plan generator works
 
-The generator ([`services/generator.py`](backend/app/services/generator.py)) is rule-based. It picks from a built-in catalog of 104 recipes ([`data/catalog.py`](backend/app/data/catalog.py)) with cooking times, plus your own saved recipes (unless you turn that off), and prices them with a grocery price table ([`data/prices.py`](backend/app/data/prices.py)). A saved recipe is offered for the meals you've planned it for before; otherwise breakfast-sounding names ("pancakes", "oatmeal") go to breakfast and everything else to lunch and dinner. Saved recipes without a cooking time are skipped when a time limit is set.
+The generator ([`services/generator.py`](backend/app/services/generator.py)) is rule-based. It picks from a built-in catalog of 112 recipes ([`data/catalog.py`](backend/app/data/catalog.py)) with cooking times, plus your own saved recipes (unless you turn that off), and prices them with a grocery price table ([`data/prices.py`](backend/app/data/prices.py)). A saved recipe is offered for the meals you've planned it for before; otherwise breakfast-sounding names ("pancakes", "oatmeal") go to breakfast and everything else to lunch and dinner. Saved recipes without a cooking time are skipped when a time limit is set.
 
 1. **Filter**: keep recipes within the time limit that don't conflict with the diet, allergies or dislikes.
 2. **Keep your meals (mix mode)**: meals already planned that week are locked in. They're added to the grocery list first and never swapped.
@@ -49,7 +49,7 @@ A whole week is generated in well under a second, for free, and the same inputs 
 
 ### Where the recipes come from
 
-- **Built-in catalog (104 recipes)**, in [`data/catalog.py`](backend/app/data/catalog.py): original write-ups of common home dishes (overnight oats, black bean tacos, minestrone...). Ingredient lists of everyday dishes aren't copyrightable, and the descriptions and instructions are written for this project, so they're free to use.
+- **Built-in catalog (112 recipes)**, in [`data/catalog.py`](backend/app/data/catalog.py): original write-ups of common home dishes (overnight oats, black bean tacos, minestrone...). Ingredient lists of everyday dishes aren't copyrightable, and the descriptions and instructions are written for this project, so they're free to use.
 - **TheMealDB** (on demand, via Discover): fetched live from TheMealDB's free API using its test key, which TheMealDB allows "during development of your app or for educational use". Results are credited as "Recipe data and imagery: TheMealDB", and imported recipes keep links to TheMealDB and to the original source. Recipes are only copied into your library when you choose to add one. Publishing an app on an app store would need a TheMealDB supporter key.
 - **Your own recipes**: whatever you add.
 
@@ -133,7 +133,7 @@ elevate-plate/
 │   │   ├── schemas.py        # Pydantic request/response models + validation
 │   │   ├── seed.py           # Sample recipes for a fresh database
 │   │   ├── data/
-│   │   │   ├── catalog.py    # 104 built-in recipes for the generator
+│   │   │   ├── catalog.py    # 112 built-in recipes for the generator
 │   │   │   ├── nutrition.py  # Macros per 100 g (USDA FoodData Central)
 │   │   │   └── prices.py     # Grocery prices (BLS averages + estimates), staples
 │   │   ├── routers/

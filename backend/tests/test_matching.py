@@ -52,3 +52,32 @@ def test_custom_term_matches_plurals_but_not_partial_words():
 def test_tree_nuts_do_not_match_coconut_or_nutmeg():
     recipe = recipe_with("coconut flakes", "nutmeg", "walnuts")
     assert conflicts_for(recipe, ("Nuts", "allergy")) == [("Nuts", "walnuts")]
+
+
+ALL_COMMON_ALLERGENS = ["Dairy", "Gluten", "Eggs", "Nuts", "Peanuts", "Soy", "Fish", "Shellfish"]
+
+
+def test_corn_tortillas_are_gluten_free():
+    from backend.app.models import FoodRestriction, Ingredient, Recipe
+    from backend.app.services.matching import find_conflicts
+
+    gluten = [FoodRestriction(name="Gluten", kind="allergy")]
+    corn = Recipe(name="Tacos", ingredients=[Ingredient(name="corn tortillas")])
+    flour = Recipe(name="Wraps", ingredients=[Ingredient(name="flour tortillas")])
+    assert find_conflicts(corn, gluten) == []
+    assert find_conflicts(flour, gluten)
+
+
+def test_breakfast_variety_with_every_common_allergen():
+    """Someone avoiding all the top allergens still gets several breakfasts to rotate."""
+    from backend.app.data.catalog import CATALOG
+    from backend.app.models import FoodRestriction
+    from backend.app.services.matching import find_conflicts
+
+    restrictions = [FoodRestriction(name=n, kind="allergy") for n in ALL_COMMON_ALLERGENS]
+    safe = [
+        r.name
+        for r in CATALOG
+        if "breakfast" in r.meal_types and not find_conflicts(r.to_model(), restrictions)
+    ]
+    assert len(safe) >= 8, safe
