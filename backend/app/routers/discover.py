@@ -8,6 +8,7 @@ from ..models import Ingredient, Recipe
 from ..schemas import DiscoveredRecipe, RecipeOut
 from ..services import mealdb
 from ..services.matching import find_conflicts
+from ..services.nutrition import estimate
 from ..services.pricing import cost_per_serving
 from .recipes import all_restrictions, build_ingredients, to_recipe_out
 
@@ -51,6 +52,7 @@ def discover(
                 ingredients=items,
                 servings=mealdb.DEFAULT_SERVINGS,
                 cost_per_serving=cost_per_serving(preview),
+                nutrition=estimate(preview),
                 conflicts=find_conflicts(preview, restrictions),
                 in_library=meal["strMeal"].lower() in library,
             )

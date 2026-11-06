@@ -17,6 +17,9 @@ A budget-aware meal planner. Plan your week yourself, or have Elevate Plate gene
 ### Budget
 
 - Every recipe shows an estimated **cost per serving**, and every shopping-list item an estimated price, based on typical US supermarket prices for the package you'd actually buy (one bag of rice, not 1.5 cups). See [Where the prices come from](#where-the-prices-come-from).
+- Every recipe, planned meal and generated meal shows its **macros per serving** (calories, protein, carbs, fat), and each planner day shows a per-person total. They're estimated from the ingredients using public-domain [USDA FoodData Central](https://fdc.nal.usda.gov) values ([`data/nutrition.py`](backend/app/data/nutrition.py)), or you can type in your own numbers when adding a recipe (blank ones are still estimated).
+- **Daily macro goals** (optional, per person) for generated plans: calories, protein, carbs and/or fat. Each meal is scored on how close it gets to its share of the day (breakfast 25%, lunch 35%, dinner 40%), and the generator can pick 1.5 or 2 servings when one isn't enough. The shopping list buys for those portions.
+- **Dining out:** mark any breakfast, lunch or dinner as eating out, with where and what you expect to spend. The generator leaves those slots open in every mode, and the spend counts toward your weekly budget.
 - The shopping list shows the week's **estimated total against your budget** with a live meter, and a budget chip in the header follows you everywhere.
 - Recipes are scaled to your household size, and basics (oil, spices, soy sauce) can be treated as already at home.
 
@@ -131,11 +134,13 @@ elevate-plate/
 │   │   ├── seed.py           # Sample recipes for a fresh database
 │   │   ├── data/
 │   │   │   ├── catalog.py    # 43 built-in recipes for the generator
+│   │   │   ├── nutrition.py  # Macros per 100 g (USDA FoodData Central)
 │   │   │   └── prices.py     # Grocery prices (BLS averages + estimates), staples
 │   │   ├── routers/
 │   │   │   ├── auth.py       # /api/auth (sign up, log in, log out, delete account)
 │   │   │   ├── recipes.py    # /api/recipes CRUD and meal ideas
 │   │   │   ├── plan.py       # /api/plan and /api/shopping-list
+│   │   │   ├── dining_out.py # /api/dining-out (meals eaten out)
 │   │   │   ├── pantry.py     # /api/pantry CRUD
 │   │   │   ├── restrictions.py  # /api/restrictions (allergies & dislikes)
 │   │   │   ├── profile.py    # /api/profile (budget, household, diet, mode)
@@ -146,6 +151,7 @@ elevate-plate/
 │   │       ├── auth.py       # Password hashing and session tokens
 │   │       ├── matching.py   # Name normalisation, allergy & diet groups, pantry matching
 │   │       ├── pricing.py    # Cost estimates and per-ingredient breakdowns
+│   │       ├── nutrition.py  # Macro estimates per serving
 │   │       ├── units.py      # Unit conversion (weight, volume, density, piece weight)
 │   │       ├── mealdb.py     # TheMealDB client and measure parser
 │   │       ├── shopping.py   # Scaling, aggregation, pantry subtraction, pricing
@@ -190,6 +196,9 @@ Interactive docs are served at `/docs` when running locally.
 | GET    | `/api/plan?start=YYYY-MM-DD`           | Meals planned for the 7 days from `start`     |
 | PUT    | `/api/plan`                            | Set a slot: `{day, meal_type, recipe_id}`     |
 | DELETE | `/api/plan/{id}`                       | Clear a planned meal                          |
+| GET    | `/api/dining-out?start=YYYY-MM-DD`     | Meals eaten out in the 7 days from `start`    |
+| PUT    | `/api/dining-out`                      | Mark a slot as eating out: `{day, meal_type, note, cost}` (replaces any recipe there) |
+| DELETE | `/api/dining-out/{id}`                 | Un-mark a meal out                            |
 | GET    | `/api/shopping-list?start=YYYY-MM-DD`  | That week's ingredients (scaled to your household, minus the pantry) plus your own items, with prices, total and budget |
 | GET    | `/api/pantry`                          | List pantry items                             |
 | POST   | `/api/pantry`                          | Add an item (merges with an existing one)     |

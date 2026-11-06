@@ -229,12 +229,14 @@ input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; border-radius
 .switch { display: flex; align-items: center; gap: 12px; font-size: 0.92rem; font-weight: 500; cursor: pointer; user-select: none; }
 .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
 .switch-track { position: relative; width: 52px; height: 30px; border: var(--border); border-radius: 999px; background: var(--paper); box-shadow: var(--inset-sm); flex-shrink: 0; transition: background 0.25s; }
+/* The knob fills the track's full inner height, touching the border with no gap. */
 .switch-track::after {
-  content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+  content: ""; position: absolute; top: 50%; left: 0; width: 26px; height: 26px; box-sizing: border-box;
+  border-radius: 50%; transform: translateY(-50%);
   background: var(--card); border: var(--border); transition: transform 0.35s var(--spring), background 0.25s;
 }
 .switch input:checked + .switch-track { background: var(--mint); box-shadow: none; }
-.switch input:checked + .switch-track::after { transform: translateX(22px); background: var(--yellow); }
+.switch input:checked + .switch-track::after { transform: translate(22px, -50%); background: var(--yellow); }
 .switch input:focus-visible + .switch-track { outline: 3px solid var(--yellow); outline-offset: 2px; }
 
 .segmented { display: inline-flex; border: var(--border); border-radius: 12px; padding: 3px; background: var(--paper); box-shadow: var(--inset-sm); }
@@ -455,6 +457,27 @@ input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; border-radius
 .pill .lucide { width: 13px; height: 13px; }
 .pill.money { background: var(--mint); cursor: help; }
 .pill.guess { background: var(--dislike-tint); cursor: help; }
+.pill.macro { background: var(--sky); cursor: help; }
+.pill.macro.entered { background: var(--yellow); }
+
+/* Macros */
+.row.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.goal-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.goal-grid label { display: flex; flex-direction: column; gap: 6px; font-size: 0.82rem; font-weight: 700; }
+.goal-grid input { min-width: 0; }
+.portion-badge { display: inline-flex; align-items: center; padding: 0 6px; border: var(--border); border-radius: 999px; background: var(--card); font-size: 0.66rem; font-weight: 700; }
+.optional { font-family: "DM Sans", system-ui, sans-serif; font-weight: 500; font-size: 0.76rem; color: var(--muted); margin-left: 4px; }
+.macro-fields .hint { margin-top: 10px; }
+.meal-card .meal-macros { margin-top: 4px; font-size: 0.7rem; font-weight: 600; opacity: 0.8; cursor: help; }
+.slot-macros { margin-top: 4px; font-size: 0.7rem; font-weight: 600; color: var(--muted); }
+.day-macros { margin: -6px 0 12px; padding: 4px 8px; border: var(--border); border-radius: 8px; background: var(--paper); box-shadow: var(--inset-sm); font-size: 0.7rem; font-weight: 700; line-height: 1.35; cursor: help; }
+.day-macros span { color: var(--muted); font-weight: 600; }
+
+/* Dining out */
+.meal.out { background: var(--card); background-image: repeating-linear-gradient(-45deg, transparent 0 7px, rgba(23, 23, 28, 0.07) 7px 9px); }
+.out-details { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 5px; margin-top: 5px; }
+.out-details input { font-size: 0.74rem; padding: 5px 7px; min-width: 0; }
+.meal-card.out { background: var(--card); background-image: repeating-linear-gradient(-45deg, transparent 0 8px, rgba(23, 23, 28, 0.07) 8px 10px); }
 .recipe-card p a, .hint a { color: inherit; font-weight: 700; text-decoration-thickness: 2px; }
 
 /* ---------- Discover ---------- */
@@ -612,6 +635,7 @@ legend { font-family: var(--display); font-size: 0.88rem; font-weight: 700; padd
   .result-summary { flex-direction: column; align-items: stretch; }
   .result-summary .ring-wrap { margin: 0 auto; }
   .stat { flex: 1 1 40%; min-width: 0; }
+  .row.four, .goal-grid { grid-template-columns: 1fr 1fr; }
   .big-number { font-size: 1.8rem; }
 }
 

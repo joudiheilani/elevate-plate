@@ -50,6 +50,11 @@ class Recipe(Base):
     instructions: Mapped[str] = mapped_column(Text, default="")
     servings: Mapped[int] = mapped_column(default=2)
     prep_minutes: Mapped[int | None] = mapped_column(default=None)
+    # Macros per serving the user typed in. None = estimate from the ingredients.
+    calories: Mapped[float | None] = mapped_column(Float, default=None)
+    protein_g: Mapped[float | None] = mapped_column(Float, default=None)
+    carbs_g: Mapped[float | None] = mapped_column(Float, default=None)
+    fat_g: Mapped[float | None] = mapped_column(Float, default=None)
     created_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -88,8 +93,28 @@ class MealPlanEntry(Base):
     day: Mapped[dt.date] = mapped_column(index=True)
     meal_type: Mapped[str] = mapped_column(String(20))
     recipe_id: Mapped[int] = mapped_column(ForeignKey("recipes.id", ondelete="CASCADE"))
+    # Servings per person (generated plans may pick 1.5 or 2 to meet macro goals).
+    portions: Mapped[float] = mapped_column(Float, default=1.0, server_default="1")
 
     recipe: Mapped[Recipe] = relationship(back_populates="plan_entries")
+
+
+class DiningOut(Base):
+    """A meal slot the user is eating out for (e.g. Friday dinner at a restaurant).
+
+    A slot holds either a planned recipe or a dining-out mark, never both: setting one
+    clears the other.
+    """
+
+    __tablename__ = "dining_out"
+    __table_args__ = (UniqueConstraint("user_id", "day", "meal_type", name="uq_user_dining_slot"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int | None] = _owner()
+    day: Mapped[dt.date] = mapped_column(index=True)
+    meal_type: Mapped[str] = mapped_column(String(20))
+    note: Mapped[str] = mapped_column(String(120), default="")
+    cost: Mapped[float | None] = mapped_column(Float, default=None)
 
 
 class PantryItem(Base):
@@ -134,6 +159,11 @@ class Profile(Base):
     meals: Mapped[str] = mapped_column(String(40), default="breakfast,lunch,dinner")
     mode: Mapped[str] = mapped_column(String(10), default="auto")
     assume_staples: Mapped[bool] = mapped_column(default=True)
+    # Daily macro goals per person for generated plans (None = no goal).
+    goal_calories: Mapped[float | None] = mapped_column(Float, default=None)
+    goal_protein_g: Mapped[float | None] = mapped_column(Float, default=None)
+    goal_carbs_g: Mapped[float | None] = mapped_column(Float, default=None)
+    goal_fat_g: Mapped[float | None] = mapped_column(Float, default=None)
 
 
 class FoodRestriction(Base):
@@ -149,4 +179,12 @@ class FoodRestriction(Base):
 
 
 # Tables whose rows belong to a user (used by migrations and account deletion).
-OWNED_MODELS = (Recipe, MealPlanEntry, PantryItem, GroceryItem, Profile, FoodRestriction)
+OWNED_MODELS = (
+    Recipe,
+    MealPlanEntry,
+    DiningOut,
+    PantryItem,
+    GroceryItem,
+    Profile,
+    FoodRestriction,
+)

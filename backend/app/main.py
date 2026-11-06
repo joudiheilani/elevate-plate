@@ -13,6 +13,7 @@ from .database import Base, engine, get_db
 from .migrations import migrate
 from .routers import (
     auth,
+    dining_out,
     discover,
     generator,
     groceries,
@@ -56,6 +57,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(recipes.router)
 app.include_router(plan.router)
+app.include_router(dining_out.router)
 app.include_router(pantry.router)
 app.include_router(restrictions.router)
 app.include_router(profile.router)

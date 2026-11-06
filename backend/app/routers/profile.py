@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ..deps import CurrentUser, DbSession
 from ..models import Profile, User
-from ..schemas import ProfileData
+from ..schemas import MacroGoals, ProfileData
 
 router = APIRouter(prefix="/api/profile", tags=["profile & budget"])
 
@@ -19,8 +19,15 @@ def get_profile(db: Session, user: User) -> Profile:
     return profile
 
 
+_GOALS = ("calories", "protein_g", "carbs_g", "fat_g")
+
+
 def _to_columns(data: ProfileData) -> dict:
-    return {**data.model_dump(exclude={"meals"}), "meals": ",".join(data.meals)}
+    return {
+        **data.model_dump(exclude={"meals", "macro_goals"}),
+        "meals": ",".join(data.meals),
+        **{f"goal_{name}": getattr(data.macro_goals, name) for name in _GOALS},
+    }
 
 
 def to_profile_data(profile: Profile) -> ProfileData:
@@ -32,6 +39,7 @@ def to_profile_data(profile: Profile) -> ProfileData:
         meals=[meal for meal in profile.meals.split(",") if meal],
         mode=profile.mode,
         assume_staples=profile.assume_staples,
+        macro_goals=MacroGoals(**{name: getattr(profile, f"goal_{name}") for name in _GOALS}),
     )
 
 

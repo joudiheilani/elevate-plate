@@ -58,6 +58,19 @@ class IngredientOut(IngredientIn):
     id: int
 
 
+class Nutrition(BaseModel):
+    """Macros for one serving (or a total, for daily and weekly sums)."""
+
+    calories: float = 0
+    protein_g: float = 0
+    carbs_g: float = 0
+    fat_g: float = 0
+    # entered: typed in by the user · estimated: worked out from the ingredients
+    source: Literal["estimated", "entered"] = "estimated"
+    note: str = ""
+    missing: list[str] = []  # ingredients left out of the estimate
+
+
 class RecipeIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -67,6 +80,11 @@ class RecipeIn(BaseModel):
     servings: int = Field(default=2, ge=1, le=100)
     prep_minutes: int | None = Field(default=None, ge=0, le=1440)
     ingredients: list[IngredientIn] = []
+    # Optional macros per serving. Blank ones are estimated from the ingredients.
+    calories: float | None = Field(default=None, ge=0, le=10000)
+    protein_g: float | None = Field(default=None, ge=0, le=1000)
+    carbs_g: float | None = Field(default=None, ge=0, le=1000)
+    fat_g: float | None = Field(default=None, ge=0, le=1000)
 
 
 class Conflict(BaseModel):
@@ -96,9 +114,14 @@ class RecipeOut(BaseModel):
     servings: int
     prep_minutes: int | None
     ingredients: list[IngredientOut]
+    calories: float | None = None
+    protein_g: float | None = None
+    carbs_g: float | None = None
+    fat_g: float | None = None
     conflicts: list[Conflict] = []
     cost_per_serving: float = 0
     cost_breakdown: list[CostLine] = []
+    nutrition: Nutrition = Nutrition()  # per serving
 
 
 class DiscoveredRecipe(BaseModel):
@@ -114,6 +137,7 @@ class DiscoveredRecipe(BaseModel):
     ingredients: list[IngredientIn]
     servings: int
     cost_per_serving: float
+    nutrition: Nutrition
     conflicts: list[Conflict]
     in_library: bool
 
@@ -131,12 +155,14 @@ class RecipeSummary(BaseModel):
     name: str
     servings: int
     prep_minutes: int | None
+    nutrition: Nutrition = Nutrition()  # per serving
 
 
 class PlanEntryIn(BaseModel):
     day: dt.date
     meal_type: MealType
     recipe_id: int
+    portions: float = Field(default=1, ge=0.5, le=4)  # servings per person
 
 
 class PlanEntryOut(BaseModel):
@@ -146,6 +172,24 @@ class PlanEntryOut(BaseModel):
     day: dt.date
     meal_type: MealType
     recipe: RecipeSummary
+    portions: float = 1
+
+
+class DiningOutIn(BaseModel):
+    """A meal eaten out, so the planner and generator leave that slot alone."""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    day: dt.date
+    meal_type: MealType
+    note: str = Field(default="", max_length=120)  # e.g. "Pizza with friends"
+    cost: float | None = Field(default=None, ge=0, le=2000)  # expected spend, all people
+
+
+class DiningOutOut(DiningOutIn):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
 
 
 class ShoppingItem(BaseModel):
@@ -202,6 +246,7 @@ class ShoppingList(BaseModel):
     items: list[ShoppingItem]
     estimated_total: float = 0
     budget: float | None = None
+    dining_out_total: float = 0  # expected spend on meals out that week
 
 
 class GroceryItemIn(BaseModel):
@@ -219,6 +264,18 @@ class GroceryItemOut(GroceryItemIn):
     id: int
 
 
+class MacroGoals(BaseModel):
+    """Daily targets per person. Any can be left out."""
+
+    calories: float | None = Field(default=None, ge=500, le=10000)
+    protein_g: float | None = Field(default=None, ge=0, le=500)
+    carbs_g: float | None = Field(default=None, ge=0, le=1000)
+    fat_g: float | None = Field(default=None, ge=0, le=500)
+
+    def targets(self) -> dict[str, float]:
+        return {name: value for name, value in self.model_dump().items() if value is not None}
+
+
 class ProfileData(BaseModel):
     weekly_budget: float = Field(default=75, ge=0, le=5000)
     people: int = Field(default=2, ge=1, le=12)
@@ -227,6 +284,7 @@ class ProfileData(BaseModel):
     meals: list[MealType] = Field(default=["breakfast", "lunch", "dinner"], min_length=1)
     mode: PlanningMode = "auto"
     assume_staples: bool = True  # oil, spices etc. count as already at home
+    macro_goals: MacroGoals = MacroGoals()
 
 
 class GenerateRequest(BaseModel):
@@ -240,6 +298,7 @@ class GenerateRequest(BaseModel):
     use_pantry: bool = True
     assume_staples: bool = True  # oil and spices are already at home
     fill_gaps: bool = False  # keep meals already planned that week; only fill empty slots
+    macro_goals: MacroGoals | None = None  # daily targets per person to plan around
     seed: int | None = None  # same seed + same inputs = same plan; change it to reshuffle
 
 
@@ -251,6 +310,7 @@ class PlanRecipe(BaseModel):
     prep_minutes: int | None
     ingredients: list[IngredientIn]
     cost_per_serving: float
+    nutrition: Nutrition = Nutrition()  # per serving
 
 
 class GeneratedMeal(BaseModel):
@@ -259,6 +319,8 @@ class GeneratedMeal(BaseModel):
     recipe: PlanRecipe
     cost: float  # for everyone eating this meal
     locked: bool = False  # already planned by the user (mix mode); kept as-is
+    portions: float = 1  # servings per person (bigger portions help meet macro goals)
+    nutrition: Nutrition = Nutrition()  # per person, at this portion size
 
 
 class GeneratedPlan(BaseModel):
@@ -269,12 +331,20 @@ class GeneratedPlan(BaseModel):
     within_budget: bool
     average_minutes: int | None
     notes: list[str]
+    dining_out: list[DiningOutOut] = []  # slots skipped because you're eating out
+    dining_out_total: float = 0
+    # Average per person per day, counting only the meals cooked at home.
+    daily_nutrition: Nutrition | None = None
+    # The share of the daily macro goals those home-cooked meals should cover
+    # (e.g. without breakfast, lunch and dinner aim for 75% of the day).
+    daily_target: Nutrition | None = None
 
 
 class ApplyMeal(BaseModel):
     day: dt.date
     meal_type: MealType
     recipe_name: str = Field(min_length=1, max_length=200)
+    portions: float = Field(default=1, ge=0.5, le=4)
 
 
 class ApplyPlanIn(BaseModel):

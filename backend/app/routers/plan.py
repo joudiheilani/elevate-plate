@@ -1,12 +1,19 @@
 import datetime as dt
 
 from fastapi import APIRouter, HTTPException, Response, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import joinedload, selectinload
 
 from ..deps import CurrentUser, DbSession
-from ..models import GroceryItem, MealPlanEntry, PantryItem, Recipe, User
-from ..schemas import PlanEntryIn, PlanEntryOut, ShoppingItem, ShoppingList
+from ..models import DiningOut, GroceryItem, MealPlanEntry, PantryItem, Recipe, User
+from ..schemas import (
+    PlanEntryIn,
+    PlanEntryOut,
+    RecipeSummary,
+    ShoppingItem,
+    ShoppingList,
+)
+from ..services.nutrition import recipe_nutrition
 from ..services.pricing import purchase_cost
 from ..services.shopping import (
     aggregate_ingredients,
@@ -35,11 +42,31 @@ def week_entries_stmt(user: User, start: dt.date):
     )
 
 
+def to_entry_out(entry: MealPlanEntry) -> PlanEntryOut:
+    summary = RecipeSummary.model_validate(entry.recipe)
+    summary.nutrition = recipe_nutrition(entry.recipe)
+    return PlanEntryOut(
+        id=entry.id,
+        day=entry.day,
+        meal_type=entry.meal_type,
+        recipe=summary,
+        portions=entry.portions or 1,
+    )
+
+
+def week_dining_stmt(user: User, start: dt.date):
+    return select(DiningOut).where(
+        DiningOut.user_id == user.id, DiningOut.day.between(start, start + WEEK_SPAN)
+    )
+
+
 @router.get("/plan", response_model=list[PlanEntryOut])
 def get_week_plan(start: dt.date, db: DbSession, user: CurrentUser):
-    """Return the meal plan for the 7 days beginning at `start`."""
-    stmt = week_entries_stmt(user, start).options(joinedload(MealPlanEntry.recipe))
-    return db.scalars(stmt).all()
+    """Return the meal plan for the 7 days beginning at `start`, with macros per serving."""
+    stmt = week_entries_stmt(user, start).options(
+        joinedload(MealPlanEntry.recipe).selectinload(Recipe.ingredients)
+    )
+    return [to_entry_out(entry) for entry in db.scalars(stmt).unique()]
 
 
 @router.put("/plan", response_model=PlanEntryOut)
@@ -57,8 +84,17 @@ def set_meal(payload: PlanEntryIn, db: DbSession, user: CurrentUser):
         entry = MealPlanEntry(user_id=user.id, day=payload.day, meal_type=payload.meal_type)
         db.add(entry)
     entry.recipe = recipe
+    entry.portions = payload.portions
+    # A slot is either cooked at home or eaten out.
+    db.execute(
+        delete(DiningOut).where(
+            DiningOut.user_id == user.id,
+            DiningOut.day == payload.day,
+            DiningOut.meal_type == payload.meal_type,
+        )
+    )
     db.commit()
-    return entry
+    return to_entry_out(entry)
 
 
 @router.delete("/plan/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -89,7 +125,9 @@ def get_shopping_list(start: dt.date, db: DbSession, user: CurrentUser):
     pantry = db.scalars(select(PantryItem).where(PantryItem.user_id == user.id))
     items = apply_pantry(
         round_up_counts(
-            aggregate_ingredients(portion(entry.recipe, profile.people) for entry in entries)
+            aggregate_ingredients(
+                portion(entry.recipe, profile.people * (entry.portions or 1)) for entry in entries
+            )
         ),
         [*pantry, *staples],
     )
@@ -114,10 +152,12 @@ def get_shopping_list(start: dt.date, db: DbSession, user: CurrentUser):
             )
         )
 
+    dining = db.scalars(week_dining_stmt(user, start))
     return ShoppingList(
         start=start,
         end=start + WEEK_SPAN,
         items=items,
         estimated_total=round(sum(item.est_cost for item in items), 2),
         budget=profile.weekly_budget,
+        dining_out_total=round(sum(d.cost or 0 for d in dining), 2),
     )

@@ -52,6 +52,7 @@ const FOOD_ICONS = [
 const state = {
   recipes: [],
   plan: [],
+  dining: [], // meal slots marked as eating out this week
   pantry: [],
   restrictions: [],
   profile: null,
@@ -132,6 +133,36 @@ function formatQuantity(quantity, unit) {
 }
 
 const money = (value, decimals = 2) => `$${Number(value || 0).toFixed(decimals)}`;
+const grams = (value) => `${Math.round(value)}g`;
+const MACRO_SOURCE = "Estimated from the ingredients using USDA FoodData Central nutrition data";
+
+/** Hover text with all four macros and where the numbers came from. */
+function macroTitle(n, label = "Per serving") {
+  const lines = [`${label}: ${Math.round(n.calories)} kcal · ${grams(n.protein_g)} protein · ${grams(n.carbs_g)} carbs · ${grams(n.fat_g)} fat`];
+  if (n.source === "entered") lines.push("Entered by you (blank fields estimated)");
+  else if (n.source) lines.push(MACRO_SOURCE);
+  if (n.missing?.length) lines.push(`Not counted: ${n.missing.join(", ")}`);
+  return lines.join("\n");
+}
+
+/** Calorie and protein pills for a recipe card (hover for carbs, fat and the source). */
+function macroPills(n, prefix = "") {
+  if (!n || (!n.calories && !n.protein_g)) return "";
+  const title = escapeHtml(macroTitle(n));
+  const cls = `pill macro${n.source === "entered" ? " entered" : ""}`;
+  return `<span class="${cls}" title="${title}">${icon("flame")}${prefix}${Math.round(n.calories)} kcal</span>
+    <span class="${cls}" title="${title}">${icon("dumbbell")}${prefix}${grams(n.protein_g)} protein</span>`;
+}
+
+/** A planned meal's macros per person, at its portion size. */
+function scaledNutrition(entry) {
+  const n = entry.recipe.nutrition;
+  if (!n) return null;
+  const k = entry.portions || 1;
+  return { ...n, calories: n.calories * k, protein_g: n.protein_g * k, carbs_g: n.carbs_g * k, fat_g: n.fat_g * k };
+}
+
+const diningTotal = () => state.dining.reduce((sum, d) => sum + (d.cost || 0), 0);
 
 /** Mirrors backend normalize(): lowercase, collapse spaces, singularize the last word. */
 function normalizeName(text) {
@@ -352,7 +383,13 @@ function haptic() {
 
 const loaders = {
   recipes: async () => { state.recipes = await api("/api/recipes"); },
-  plan: async () => { state.plan = await api(`/api/plan?start=${isoDate(state.weekStart)}`); },
+  plan: async () => {
+    const start = isoDate(state.weekStart);
+    [state.plan, state.dining] = await Promise.all([
+      api(`/api/plan?start=${start}`),
+      api(`/api/dining-out?start=${start}`),
+    ]);
+  },
   pantry: async () => { state.pantry = await api("/api/pantry"); },
   restrictions: async () => { state.restrictions = await api("/api/restrictions"); },
   profile: async () => { state.profile = await api("/api/profile"); },
@@ -377,7 +414,8 @@ async function saveProfile(changes) {
 
 function renderBudgetChip() {
   if (!state.shopping || !state.profile) return;
-  const total = state.shopping.estimated_total;
+  // Groceries plus what you expect to spend eating out.
+  const total = state.shopping.estimated_total + (state.shopping.dining_out_total || 0);
   const budget = state.profile.weekly_budget;
   $("#budget-chip-text").textContent = `${money(total, 0)} / ${money(budget, 0)}`;
   $(".budget-chip").classList.toggle("over", budget > 0 && total > budget);
@@ -398,7 +436,7 @@ function renderHome() {
   $("#manual-panel").hidden = mode !== "manual";
   $("#auto-panel").hidden = mode === "manual"; // auto and hybrid both use the generator
   $("#hybrid-info").hidden = mode !== "hybrid";
-  $("#hybrid-count").innerHTML = `${state.plan.length}<small>/21</small>`;
+  $("#hybrid-count").innerHTML = `${state.plan.length + state.dining.length}<small>/21</small>`;
   $("#hybrid-week").textContent = weekLabel();
   if (!$("#generate-btn").disabled) $("#generate-btn span").textContent = generateLabel();
   $("#manual-budget").value = state.profile.weekly_budget;
@@ -452,7 +490,12 @@ function renderGeneratorForm() {
       diet: state.profile.diet,
       meals: [...state.profile.meals],
       assume_staples: state.profile.assume_staples,
+      macro_goals: { ...state.profile.macro_goals },
     });
+  }
+  for (const field of MACRO_FIELDS) {
+    const input = $(`#gen-goals [name=${field}]`);
+    if (document.activeElement !== input) input.value = draft.macro_goals[field] ?? "";
   }
   $("#gen-staples").checked = draft.assume_staples;
   setBudgetInputs(draft.weekly_budget);
@@ -497,6 +540,17 @@ $("#gen-budget").addEventListener("input", (event) => {
 });
 
 $("#gen-staples").addEventListener("change", (event) => { draft.assume_staples = event.target.checked; });
+
+$("#gen-goals").addEventListener("input", (event) => {
+  const input = event.target.closest("input");
+  if (!input) return;
+  draft.macro_goals[input.name] = input.value === "" ? null : Number(input.value);
+});
+
+/** The goals to send, or null when none are filled in. */
+function macroGoals() {
+  return Object.values(draft.macro_goals).some((v) => v != null) ? draft.macro_goals : null;
+}
 
 $$("[data-people-step]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -552,6 +606,7 @@ async function generate({ reshuffle = false } = {}) {
     diet: draft.diet,
     meals: draft.meals,
     assume_staples: draft.assume_staples,
+    macro_goals: draft.macro_goals,
   });
   // Plan the week currently shown in the planner (this week by default).
   state.generatorStart = isoDate(state.weekStart);
@@ -567,6 +622,7 @@ async function generate({ reshuffle = false } = {}) {
       use_pantry: $("#gen-use-pantry").checked,
       assume_staples: draft.assume_staples,
       fill_gaps: state.profile.mode === "hybrid",
+      macro_goals: macroGoals(),
       seed: state.generatorSeed,
     },
   });
@@ -603,7 +659,7 @@ $("#apply-btn").addEventListener("click", () => {
     const result = await api("/api/generator/apply", {
       method: "POST",
       body: {
-        meals: newMeals.map((m) => ({ day: m.day, meal_type: m.meal_type, recipe_name: m.recipe.name })),
+        meals: newMeals.map((m) => ({ day: m.day, meal_type: m.meal_type, recipe_name: m.recipe.name, portions: m.portions })),
       },
     });
     confetti(button);
@@ -619,7 +675,8 @@ function renderGenerated() {
   $("#gen-result").hidden = false;
   if (!plan) return;
 
-  const ratio = plan.budget > 0 ? plan.estimated_total / plan.budget : 0;
+  const spent = plan.estimated_total + plan.dining_out_total;
+  const ratio = plan.budget > 0 ? spent / plan.budget : 0;
   setRing($("#gen-ring"), ratio);
   animateNumber($("#gen-ring-pct"), Math.round(ratio * 100), (v) => `${Math.round(v)}%`);
   animateNumber($("#stat-total"), plan.estimated_total, (v) => money(v));
@@ -627,9 +684,23 @@ function renderGenerated() {
   animateNumber($("#stat-minutes"), plan.average_minutes ?? 0, (v) => String(Math.round(v)));
   const servings = plan.meals.length * draft.people;
   animateNumber($("#stat-per-meal"), servings ? plan.estimated_total / servings : 0, (v) => money(v));
+  const daily = plan.daily_nutrition;
+  $("#stat-kcal-wrap").hidden = $("#stat-protein-wrap").hidden = !daily;
+  if (daily) {
+    const target = plan.daily_target;
+    const ofGoal = (value) => (value ? ` / ${Math.round(value).toLocaleString()}` : "");
+    animateNumber($("#stat-kcal"), daily.calories, (v) => `${Math.round(v).toLocaleString()}${ofGoal(target?.calories)}`);
+    animateNumber($("#stat-protein"), daily.protein_g, (v) => `${grams(v)}${ofGoal(target?.protein_g)}`);
+    $("#stat-kcal-wrap .stat-label").textContent = target?.calories ? "kcal / goal, per person, per day" : "kcal per person, per day";
+    $("#stat-protein-wrap .stat-label").textContent = target?.protein_g ? "protein / goal, per person, per day" : "protein per person, per day";
+    $("#stat-kcal-wrap").title = $("#stat-protein-wrap").title =
+      `${macroTitle({ ...daily, source: "" }, "Average per person, per day")}\n`
+      + "Only counts the meals in this plan, not meals out or snacks. Estimated from USDA FoodData Central data."
+      + (target ? `\nGoal for these meals: ${target.note}` : "");
+  }
 
   const notes = plan.within_budget && plan.meals.length
-    ? [`<p class="notice good">${icon("circle-check")} This week fits your budget with ${money(plan.budget - plan.estimated_total)} to spare.</p>`]
+    ? [`<p class="notice good">${icon("circle-check")} This week fits your budget with ${money(plan.budget - spent)} to spare${plan.dining_out_total ? " after eating out" : ""}.</p>`]
     : [];
   notes.push(...plan.notes.map((note) => `<p class="notice">${icon("triangle-alert")} ${escapeHtml(note)}</p>`));
   $("#gen-notes").innerHTML = notes.join("");
@@ -638,16 +709,34 @@ function renderGenerated() {
   let index = 0;
   $("#gen-week").innerHTML = DAY_NAMES.map((dayName, offset) => {
     const day = isoDate(addDays(start, offset));
-    const meals = plan.meals.filter((m) => m.day === day);
-    if (!meals.length) return "";
-    const cards = meals.map((m) => {
+    const mealIndex = (slot) => MEALS.findIndex((m) => m.key === slot.meal_type);
+    const slots = [
+      ...plan.meals.filter((m) => m.day === day),
+      ...plan.dining_out.filter((d) => d.day === day).map((d) => ({ ...d, out: true })),
+    ].sort((a, b) => mealIndex(a) - mealIndex(b));
+    if (!slots.length) return "";
+    const cards = slots.map((m) => {
       const meal = MEAL_BY_KEY[m.meal_type];
+      if (m.out) {
+        return `<div class="meal-card out reveal" style="--i:${index++}" title="You're eating out, so this meal is left open">
+            <div class="meal-type">${icon(meal.icon)}${meal.label}<span class="mine">${icon("utensils")}Out</span></div>
+            <div class="meal-title">${escapeHtml(m.note || "Dining out")}</div>
+            <div class="meal-meta">${m.cost != null ? `<span>${icon("wallet")}${money(m.cost)}</span>` : ""}</div>
+          </div>`;
+      }
       const mine = m.locked ? `<span class="mine" title="You planned this">${icon("pin")}Yours</span>` : "";
       const time = m.recipe.prep_minutes != null ? `<span>${icon("clock")}${m.recipe.prep_minutes}m</span>` : "";
+      const n = m.nutrition?.calories ? m.nutrition : m.recipe.nutrition;
+      const kcal = n?.calories ? `<span>${icon("flame")}${Math.round(n.calories)} kcal</span>` : "";
+      const size = m.portions !== 1 ? `<span class="portion-badge" title="${m.portions} servings per person, to help meet your goals">${m.portions}x</span>` : "";
+      const macros = n?.calories
+        ? `<div class="meal-macros" title="${escapeHtml(macroTitle(n, "Per person"))}">${grams(n.protein_g)} protein · ${grams(n.carbs_g)} carbs · ${grams(n.fat_g)} fat</div>`
+        : "";
       return `<div class="meal-card ${meal.key} ${m.locked ? "locked" : ""} reveal" style="--i:${index++}" title="${escapeHtml(m.recipe.description)}">
           <div class="meal-type">${icon(meal.icon)}${meal.label}${mine}</div>
-          <div class="meal-title">${escapeHtml(m.recipe.name)}</div>
-          <div class="meal-meta">${time}<span>${icon("wallet")}${money(m.cost)}</span></div>
+          <div class="meal-title">${escapeHtml(m.recipe.name)} ${size}</div>
+          <div class="meal-meta">${time}<span>${icon("wallet")}${money(m.cost)}</span>${kcal}</div>
+          ${macros}
         </div>`;
     }).join("");
     return `<div class="gen-day"><div class="gen-day-head">${dayName}<span>${formatShort(addDays(start, offset))}</span></div>${cards}</div>`;
@@ -674,28 +763,49 @@ function renderGenerated() {
 // Planner
 // =====================================================================
 
+function renderPlannerProgress() {
+  const outCount = state.dining.length;
+  const planned = state.plan.length + outCount;
+  const total = DAY_NAMES.length * MEALS.length;
+  const cost = state.shopping?.estimated_total ?? 0;
+  const eatingOut = diningTotal();
+  $("#plan-progress").textContent = `${planned} of ${total} meals planned${outCount ? ` (${outCount} eating out)` : ""}`
+    + ` · about ${money(cost)} in groceries${eatingOut ? ` + ${money(eatingOut)} eating out` : ""}`;
+  requestAnimationFrame(() => { $("#plan-progress-bar").style.width = `${(planned / total) * 100}%`; });
+}
+
 function renderPlanner() {
   $("#week-label").textContent = weekLabel();
   const today = isoDate(new Date());
   const recipesById = new Map(state.recipes.map((r) => [r.id, r]));
   const safeRecipes = state.recipes.filter((r) => !r.conflicts.length);
-  const options = safeRecipes.length
+  const recipeOptions = safeRecipes.length
     ? safeRecipes.map((r) => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join("")
     : `<option disabled>No recipes available</option>`;
-
-  const planned = state.plan.length;
-  const total = DAY_NAMES.length * MEALS.length;
-  const cost = state.shopping?.estimated_total ?? 0;
-  $("#plan-progress").textContent = `${planned} of ${total} meals planned · about ${money(cost)} in groceries`;
-  requestAnimationFrame(() => { $("#plan-progress-bar").style.width = `${(planned / total) * 100}%`; });
+  const options = `<option value="out">Dining out</option>${recipeOptions}`;
+  renderPlannerProgress();
 
   $("#week-grid").innerHTML = DAY_NAMES.map((dayName, i) => {
     const date = addDays(state.weekStart, i);
     const day = isoDate(date);
+    const dayEntries = state.plan.filter((e) => e.day === day);
     const slots = MEALS.map((meal) => {
-      const entry = state.plan.find((e) => e.day === day && e.meal_type === meal.key);
+      const entry = dayEntries.find((e) => e.meal_type === meal.key);
+      const out = state.dining.find((d) => d.day === day && d.meal_type === meal.key);
       let content;
-      if (entry) {
+      if (out) {
+        content = `<div class="meal out">
+            <select class="meal-select" data-day="${day}" data-meal="${meal.key}"
+              aria-label="${dayName} ${meal.label}: dining out. Choose a recipe instead" title="Switch to a recipe">
+              <option value="out" selected>Dining out</option>${recipeOptions}</select>
+            <button class="icon-btn" data-clear-out="${out.id}" title="Remove" aria-label="Remove dining out for ${dayName} ${meal.label}">${icon("x")}</button>
+          </div>
+          <div class="out-details" data-day="${day}" data-meal="${meal.key}">
+            <input data-out-note maxlength="120" placeholder="Where? (optional)" value="${escapeHtml(out.note)}" aria-label="Where you're eating, ${dayName} ${meal.label}" />
+            <input data-out-cost type="number" min="0" max="2000" step="any" inputmode="decimal" placeholder="$ cost" value="${out.cost ?? ""}"
+              aria-label="Expected cost for everyone, ${dayName} ${meal.label}" title="What you expect to spend, for everyone. Counts toward your weekly budget." />
+          </div>`;
+      } else if (entry) {
         const conflicts = recipesById.get(entry.recipe.id)?.conflicts ?? [];
         const warn = conflicts.length
           ? `<span class="warn" title="Contains ${escapeHtml(conflicts.map((c) => c.ingredient).join(", "))}">${icon("triangle-alert")}</span>`
@@ -712,23 +822,70 @@ function renderPlanner() {
               aria-label="${dayName} ${meal.label}: ${escapeHtml(entry.recipe.name)}. Choose a different recipe" title="Switch recipe">${choices}</select>${warn}
             <button class="icon-btn" data-clear="${entry.id}" title="Remove" aria-label="Remove ${escapeHtml(entry.recipe.name)}">${icon("x")}</button>
           </div>`;
+        const n = scaledNutrition(entry);
+        if (n?.calories) {
+          const size = entry.portions !== 1 ? ` · ${entry.portions}x portion` : "";
+          content += `<div class="slot-macros" title="${escapeHtml(macroTitle(n, `Per person${size ? `, ${entry.portions} servings` : ""}`))}">${Math.round(n.calories)} kcal · ${grams(n.protein_g)} protein${size}</div>`;
+        }
       } else {
         content = `<select data-day="${day}" data-meal="${meal.key}" aria-label="${dayName} ${meal.label}">
             <option value="">+ Add ${meal.label.toLowerCase()}</option>${options}</select>`;
       }
       return `<div class="slot ${meal.key}"><div class="slot-label">${icon(meal.icon)}${meal.label}</div>${content}</div>`;
     }).join("");
+    // Day total per person, for the meals cooked at home.
+    const totals = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+    for (const e of dayEntries) {
+      const n = scaledNutrition(e);
+      for (const key of Object.keys(totals)) totals[key] += n?.[key] || 0;
+    }
+    const outToday = state.dining.some((d) => d.day === day);
+    const note = `Counts the ${dayEntries.length} meal${dayEntries.length === 1 ? "" : "s"} planned at home${outToday ? ", not meals out" : ""}.`;
+    const dayMacros = totals.calories
+      ? `<div class="day-macros" title="${escapeHtml(`${macroTitle(totals, "Per person")}\n${note}`)}">
+          ${Math.round(totals.calories).toLocaleString()} kcal <span>· ${grams(totals.protein_g)} protein</span></div>`
+      : "";
     return `<div class="day reveal ${day === today ? "today" : ""}" style="--i:${i}">
         <div class="day-head"><span class="day-name">${dayName}</span><span class="day-date">${formatShort(date)}</span></div>
+        ${dayMacros}
         ${slots}
       </div>`;
   }).join("");
   refreshIcons();
 }
 
+/** Save the "where" and "cost" of a dining-out slot. */
+function saveDiningDetails(details) {
+  const costText = details.querySelector("[data-out-cost]").value;
+  const cost = costText === "" ? null : Number(costText);
+  if (cost != null && !(cost >= 0 && cost <= 2000)) return toast("Enter a cost between $0 and $2000", true);
+  run(async () => {
+    await api("/api/dining-out", {
+      method: "PUT",
+      body: {
+        day: details.dataset.day,
+        meal_type: details.dataset.meal,
+        note: details.querySelector("[data-out-note]").value.trim(),
+        cost,
+      },
+    });
+    await reload("plan");
+    renderPlannerProgress(); // no full re-render, so focus stays where you tabbed to
+  }, "Saved");
+}
+
 $("#week-grid").addEventListener("change", (event) => {
+  const details = event.target.closest(".out-details");
+  if (details) return saveDiningDetails(details);
   const select = event.target.closest("select[data-day]");
   if (!select?.value) return;
+  if (select.value === "out") {
+    return run(async () => {
+      await api("/api/dining-out", { method: "PUT", body: { day: select.dataset.day, meal_type: select.dataset.meal } });
+      await reload("plan");
+      renderPlanner();
+    }, "Marked as dining out");
+  }
   run(async () => {
     await api("/api/plan", {
       method: "PUT",
@@ -740,6 +897,14 @@ $("#week-grid").addEventListener("change", (event) => {
 });
 
 $("#week-grid").addEventListener("click", (event) => {
+  const outButton = event.target.closest("[data-clear-out]");
+  if (outButton) {
+    return run(async () => {
+      await api(`/api/dining-out/${outButton.dataset.clearOut}`, { method: "DELETE" });
+      await reload("plan");
+      renderPlanner();
+    });
+  }
   const button = event.target.closest("[data-clear]");
   if (!button) return;
   run(async () => {
@@ -810,6 +975,7 @@ function renderRecipes() {
     const guessed = r.cost_breakdown.filter((line) => !line.priced).length;
     meta.push(`<span class="pill money" title="${escapeHtml(costTooltip(r))}">${icon("wallet")}${money(r.cost_per_serving)}/serving</span>`);
     if (guessed) meta.push(`<span class="pill guess" title="${escapeHtml(costTooltip(r))}">${icon("circle-help")}${guessed} guessed</span>`);
+    meta.push(macroPills(r.nutrition));
     const ingredients = r.ingredients.map((ing) => {
       const have = inPantry.has(normalizeName(ing.name));
       return `<li class="${have ? "in-pantry" : ""}" title="${have ? "In your pantry" : ""}">${have ? icon("check") : ""}
@@ -886,6 +1052,8 @@ function addIngredientRow(ingredient = {}) {
   refreshIcons();
 }
 
+const MACRO_FIELDS = ["calories", "protein_g", "carbs_g", "fat_g"];
+
 function openRecipeDialog(recipe = null) {
   state.editingRecipeId = recipe?.id ?? null;
   $("#recipe-dialog-title").textContent = recipe ? "Edit recipe" : "New recipe";
@@ -894,6 +1062,15 @@ function openRecipeDialog(recipe = null) {
   fields.description.value = recipe?.description ?? "";
   fields.servings.value = recipe?.servings ?? 2;
   fields.prep_minutes.value = recipe?.prep_minutes ?? "";
+  // Blank macro fields show the current estimate as a faded placeholder.
+  const estimate = recipe && recipe.nutrition?.source !== "entered" ? recipe.nutrition : null;
+  for (const field of MACRO_FIELDS) {
+    fields[field].value = recipe?.[field] ?? "";
+    fields[field].placeholder = estimate?.calories ? `~${Math.round(estimate[field])}` : "";
+  }
+  $("#macro-hint").textContent = estimate?.calories
+    ? "The faded numbers are our estimate from the ingredients. Type your own to replace them."
+    : "Know the numbers (from a label or app)? Add them here. Anything left blank is estimated from the ingredients.";
   fields.instructions.value = recipe?.instructions ?? "";
   $("#ingredient-rows").innerHTML = "";
   (recipe?.ingredients.length ? recipe.ingredients : [{}, {}, {}]).forEach(addIngredientRow);
@@ -916,6 +1093,8 @@ function readRecipeForm() {
     description: fields.description.value.trim(),
     servings: Number(fields.servings.value),
     prep_minutes: fields.prep_minutes.value === "" ? null : Number(fields.prep_minutes.value),
+    ...Object.fromEntries(MACRO_FIELDS.map((field) =>
+      [field, fields[field].value === "" ? null : Number(fields[field].value)])),
     instructions: fields.instructions.value.trim(),
     ingredients,
   };
@@ -956,6 +1135,7 @@ function renderDiscover() {
         <div class="recipe-meta">
           ${kind ? `<span class="pill">${escapeHtml(kind)}</span>` : ""}
           <span class="pill money" title="Estimated, assuming ${r.servings} servings">${icon("wallet")}~${money(r.cost_per_serving)}/serving</span>
+          ${macroPills(r.nutrition, "~")}
           <span class="pill">${icon("list")}${r.ingredients.length} ingredients</span>
         </div>
         ${badges}
@@ -1106,8 +1286,13 @@ async function renderShopping() {
 
   // Budget meter
   const budget = state.profile.weekly_budget;
-  const ratio = budget > 0 ? data.estimated_total / budget : 0;
+  const eatingOut = data.dining_out_total || 0;
+  const spent = data.estimated_total + eatingOut;
+  const ratio = budget > 0 ? spent / budget : 0;
   animateNumber($("#shop-total"), data.estimated_total, (v) => money(v));
+  const diningNote = $("#shop-dining-note");
+  diningNote.hidden = !eatingOut;
+  diningNote.innerHTML = `${icon("utensils")}Plus about ${money(eatingOut)} you expect to spend eating out this week, included in the budget meter above.`;
   $("#shop-budget").textContent = money(budget, 0);
   const meter = $("#shop-meter");
   requestAnimationFrame(() => { meter.style.width = `${Math.min(ratio, 1) * 100}%`; });
@@ -1115,8 +1300,8 @@ async function renderShopping() {
   $("#shop-meter-note").textContent = budget <= 0
     ? "Set a weekly budget on the Home tab to track spending."
     : ratio > 1
-      ? `${money(data.estimated_total - budget)} over budget. Try swapping a pricey meal or using what's in your pantry.`
-      : `${money(budget - data.estimated_total)} left in your budget this week.`;
+      ? `${money(spent - budget)} over budget. Try swapping a pricey meal or using what's in your pantry.`
+      : `${money(budget - spent)} left in your budget this week.`;
 
   const toBuy = items.filter((item) => item.status !== "have");
   const have = items.filter((item) => item.status === "have");

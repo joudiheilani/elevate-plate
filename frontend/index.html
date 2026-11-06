@@ -221,6 +221,17 @@
               </div>
             </div>
 
+            <div class="field wide">
+              <span class="label"><i data-lucide="target"></i>Daily macro goals <span class="optional">optional, per person</span></span>
+              <div class="goal-grid" id="gen-goals">
+                <label>Calories<input name="calories" type="number" min="500" max="10000" step="50" inputmode="numeric" placeholder="e.g. 2000" /></label>
+                <label>Protein (g)<input name="protein_g" type="number" min="0" max="500" step="5" inputmode="numeric" placeholder="e.g. 120" /></label>
+                <label>Carbs (g)<input name="carbs_g" type="number" min="0" max="1000" step="5" inputmode="numeric" placeholder="e.g. 220" /></label>
+                <label>Fat (g)<input name="fat_g" type="number" min="0" max="500" step="5" inputmode="numeric" placeholder="e.g. 70" /></label>
+              </div>
+              <p class="hint">Fill in any you care about. Meals are picked to land close to them, using bigger portions (1.5 or 2 servings) when one serving isn't enough. Meals you eat out or don't plan take their usual share of the day.</p>
+            </div>
+
             <div class="field wide switches">
               <label class="switch"><input type="checkbox" id="gen-use-pantry" checked /><span class="switch-track"></span>Use what's in my pantry</label>
               <label class="switch"><input type="checkbox" id="gen-staples" checked /><span class="switch-track"></span>I have basics at home (oil, spices, soy sauce)</label>
@@ -247,6 +258,8 @@
                 <div class="stat"><span class="stat-value" id="stat-meals">0</span><span class="stat-label">meals</span></div>
                 <div class="stat"><span class="stat-value" id="stat-minutes">0</span><span class="stat-label">avg minutes</span></div>
                 <div class="stat"><span class="stat-value" id="stat-per-meal">$0</span><span class="stat-label">per person, per meal</span></div>
+                <div class="stat" id="stat-kcal-wrap" title="Average per person, per day, for the meals in this plan"><span class="stat-value" id="stat-kcal">0</span><span class="stat-label">kcal per person, per day</span></div>
+                <div class="stat" id="stat-protein-wrap" title="Average per person, per day, for the meals in this plan"><span class="stat-value" id="stat-protein">0g</span><span class="stat-label">protein per person, per day</span></div>
               </div>
               <div class="result-actions">
                 <button class="btn ghost" id="shuffle-btn" type="button"><i data-lucide="shuffle"></i>Shuffle</button>
@@ -380,6 +393,7 @@
           </div>
           <div class="meter"><div class="meter-fill" id="shop-meter"></div></div>
           <p class="subtle" id="shop-meter-note"></p>
+          <p class="hint with-icon" id="shop-dining-note" hidden></p>
           <p class="hint with-icon"><i data-lucide="info"></i>Prices are rough estimates of typical US supermarket prices for the package you'd buy, not live store prices. Add your own price to any item you enter.</p>
         </div>
 
@@ -461,6 +475,16 @@
           <label>Servings <input name="servings" type="number" min="1" max="100" value="2" required /></label>
           <label>Cooking time (min) <input name="prep_minutes" type="number" min="0" max="1440" /></label>
         </div>
+        <fieldset class="macro-fields">
+          <legend>Nutrition per serving <span class="optional">optional</span></legend>
+          <div class="row four">
+            <label>Calories <input name="calories" type="number" min="0" max="10000" step="any" inputmode="decimal" /></label>
+            <label>Protein (g) <input name="protein_g" type="number" min="0" max="1000" step="any" inputmode="decimal" /></label>
+            <label>Carbs (g) <input name="carbs_g" type="number" min="0" max="1000" step="any" inputmode="decimal" /></label>
+            <label>Fat (g) <input name="fat_g" type="number" min="0" max="1000" step="any" inputmode="decimal" /></label>
+          </div>
+          <p class="hint" id="macro-hint">Know the numbers (from a label or app)? Add them here. Anything left blank is estimated from the ingredients.</p>
+        </fieldset>
         <fieldset>
           <legend>Ingredients</legend>
           <div id="ingredient-rows"></div>

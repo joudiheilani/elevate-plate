@@ -7,6 +7,7 @@ from ..deps import CurrentUser, DbSession
 from ..migrations import claim_unowned_rows
 from ..models import (
     AuthToken,
+    DiningOut,
     FoodRestriction,
     GroceryItem,
     Ingredient,
@@ -78,7 +79,7 @@ def delete_account(payload: DeleteAccountIn, db: DbSession, user: CurrentUser):
     db.execute(delete(MealPlanEntry).where(MealPlanEntry.user_id == user.id))
     db.execute(delete(MealPlanEntry).where(MealPlanEntry.recipe_id.in_(recipe_ids)))
     db.execute(delete(Ingredient).where(Ingredient.recipe_id.in_(recipe_ids)))
-    for model in (Recipe, PantryItem, GroceryItem, Profile, FoodRestriction):
+    for model in (Recipe, DiningOut, PantryItem, GroceryItem, Profile, FoodRestriction):
         db.execute(delete(model).where(model.user_id == user.id))
     db.execute(delete(AuthToken).where(AuthToken.user_id == user.id))
     db.execute(delete(User).where(User.id == user.id))

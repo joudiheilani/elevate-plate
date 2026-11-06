@@ -8,9 +8,16 @@ def test_profile_defaults_and_update(client):
         "meals": ["breakfast", "lunch", "dinner"],
         "mode": "auto",
         "assume_staples": True,
+        "macro_goals": {"calories": None, "protein_g": None, "carbs_g": None, "fat_g": None},
     }
 
-    updated = {**profile, "weekly_budget": 50, "max_minutes": None, "diet": "vegetarian"}
+    updated = {
+        **profile,
+        "weekly_budget": 50,
+        "max_minutes": None,
+        "diet": "vegetarian",
+        "macro_goals": {"calories": 2000, "protein_g": 120, "carbs_g": None, "fat_g": None},
+    }
     assert client.put("/api/profile", json=updated).json() == updated
     assert client.get("/api/profile").json() == updated
 

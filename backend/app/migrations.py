@@ -17,6 +17,18 @@ _LEGACY_UNIQUES = {
     "meal_plan_entries": ["day", "meal_type"],
     "food_restrictions": ["name"],
 }
+# Columns added after the first release: (table, column, SQL type).
+_NEW_COLUMNS = (
+    ("recipes", "calories", "FLOAT"),
+    ("recipes", "protein_g", "FLOAT"),
+    ("recipes", "carbs_g", "FLOAT"),
+    ("recipes", "fat_g", "FLOAT"),
+    ("meal_plan_entries", "portions", "FLOAT NOT NULL DEFAULT 1"),
+    ("profile", "goal_calories", "FLOAT"),
+    ("profile", "goal_protein_g", "FLOAT"),
+    ("profile", "goal_carbs_g", "FLOAT"),
+    ("profile", "goal_fat_g", "FLOAT"),
+)
 _PER_USER_UNIQUES = {
     "uq_user_meal_slot": ("meal_plan_entries", "user_id, day, meal_type"),
     "uq_user_restriction": ("food_restrictions", "user_id, name"),
@@ -48,6 +60,13 @@ def migrate(engine: Engine) -> list[str]:
                     text(f"CREATE INDEX IF NOT EXISTS ix_{table}_user_id ON {table} (user_id)")
                 )
                 applied.append(f"added {table}.user_id")
+
+        for table, column, sql_type in _NEW_COLUMNS:
+            if table not in tables:
+                continue
+            if column not in {c["name"] for c in inspector.get_columns(table)}:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {sql_type}"))
+                applied.append(f"added {table}.{column}")
 
         # SQLite can't drop constraints; it's only used for local development, where
         # deleting mealplanner.db gives a fresh schema.
