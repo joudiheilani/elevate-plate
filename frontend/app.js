@@ -1044,13 +1044,34 @@ const dialog = $("#recipe-dialog");
 const form = $("#recipe-form");
 const fields = form.elements;
 
+// Units for recipe ingredients: [stored value, label]. "" means a count (2 eggs).
+const RECIPE_UNITS = [
+  ["", "whole / each"],
+  ["cup", "cups"], ["tbsp", "tablespoons"], ["tsp", "teaspoons"],
+  ["oz", "ounces"], ["lb", "pounds"], ["g", "grams"], ["kg", "kilograms"],
+  ["fl oz", "fluid ounces"], ["ml", "milliliters"], ["l", "liters"],
+  ["slice", "slices"], ["clove", "cloves"], ["can", "cans"], ["jar", "jars"],
+  ["bunch", "bunches"], ["head", "heads"], ["stalk", "stalks"], ["bag", "bags"],
+  ["pinch", "pinch"],
+];
+
+/** <option>s for the unit dropdown. A unit not in the list (from an older or imported
+ *  recipe) is kept as an extra option so saving doesn't change it. */
+function unitOptions(current = "") {
+  const value = (current ?? "").trim();
+  const known = RECIPE_UNITS.some(([unit]) => unit === value);
+  const options = known ? RECIPE_UNITS : [...RECIPE_UNITS, [value, value]];
+  return options.map(([unit, label]) =>
+    `<option value="${escapeHtml(unit)}"${unit === value ? " selected" : ""}>${escapeHtml(label)}</option>`).join("");
+}
+
 function addIngredientRow(ingredient = {}) {
   const row = document.createElement("div");
   row.className = "ingredient-row";
   row.innerHTML = `
-    <input name="qty" type="number" min="0" step="any" placeholder="Qty" value="${ingredient.quantity ?? ""}" />
-    <input name="unit" placeholder="Unit" maxlength="30" list="unit-suggestions" value="${escapeHtml(ingredient.unit)}" />
-    <input name="ingredient" placeholder="Ingredient" maxlength="120" value="${escapeHtml(ingredient.name)}" />
+    <input name="qty" type="number" min="0" step="any" inputmode="decimal" placeholder="3" aria-label="Amount" value="${ingredient.quantity ?? ""}" />
+    <select name="unit" aria-label="Unit">${unitOptions(ingredient.unit)}</select>
+    <input name="ingredient" placeholder="bread" aria-label="Ingredient" maxlength="120" value="${escapeHtml(ingredient.name)}" />
     <button type="button" class="icon-btn" title="Remove" aria-label="Remove ingredient">${icon("x")}</button>`;
   row.querySelector("button").addEventListener("click", () => row.remove());
   $("#ingredient-rows").appendChild(row);
@@ -1195,6 +1216,8 @@ function renderSuggestions() {
   state.recipes.forEach((r) => r.ingredients.forEach((i) => names.add(i.name.toLowerCase())));
   $("#ingredient-suggestions").innerHTML = [...names].sort().map((n) => `<option value="${escapeHtml(n)}"></option>`).join("");
   $("#unit-suggestions").innerHTML = COMMON_UNITS.map((u) => `<option value="${u}"></option>`).join("");
+  const pantryUnit = $("#pantry-form [name=unit]");
+  if (!pantryUnit.options.length) pantryUnit.innerHTML = unitOptions("");
 }
 
 async function renderPantry() {
@@ -1245,7 +1268,7 @@ $("#pantry-form").addEventListener("submit", (event) => {
       body: { name: pantryFields.name.value.trim(), quantity: quantity === "" ? null : Number(quantity), unit: pantryFields.unit.value.trim() },
     });
     event.target.reset();
-    pantryFields.name.focus();
+    pantryFields.quantity.focus();
     await reload("pantry");
     await renderPantry();
   }, "Added to pantry");

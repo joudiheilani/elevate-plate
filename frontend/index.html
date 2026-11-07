@@ -88,7 +88,7 @@
           <div class="hero-text">
             <p class="sticker">Your week, elevated</p>
             <h1>Eat well. <span class="marker">Spend smart.</span></h1>
-            <p class="subtle">Plan your meals yourself, or let Elevate Plate build a week around your budget, your diet and the time you have to cook.</p>
+            <p class="subtle">Plan your meals yourself, or let Elevate Plate build a week around your budget, your diet, and the time you have to cook.</p>
           </div>
           <div class="ring-wrap" title="This week's estimated grocery cost">
             <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
@@ -349,13 +349,14 @@
         </div>
         <div class="two-col">
           <div class="card">
-            <form id="pantry-form" class="inline-form">
-              <input name="name" placeholder="Item, e.g. rolled oats" list="ingredient-suggestions" required maxlength="120" />
-              <input name="quantity" type="number" min="0" step="any" placeholder="Qty" />
-              <input name="unit" placeholder="Unit" maxlength="30" list="unit-suggestions" />
+            <p class="hint ingredient-example">Add each item as <strong>amount</strong>, <strong>unit</strong>, then <strong>item</strong>. For example, <strong>2 · pounds · chicken breast</strong> or <strong>6 · whole · eggs</strong>.</p>
+            <form id="pantry-form" class="inline-form pantry-form">
+              <input name="quantity" type="number" min="0" step="any" inputmode="decimal" placeholder="2" aria-label="Amount" />
+              <select name="unit" aria-label="Unit"></select>
+              <input name="name" placeholder="chicken breast" aria-label="Item" list="ingredient-suggestions" required maxlength="120" />
               <button class="btn primary" type="submit"><i data-lucide="plus"></i>Add</button>
             </form>
-            <p class="hint">Leave the quantity blank if you just "have some" (spices, oil...).</p>
+            <p class="hint">Leave the amount blank if you just "have some" (spices, oil...).</p>
             <ul id="pantry-list" class="item-list"></ul>
           </div>
           <div class="card">
@@ -488,6 +489,8 @@
         </fieldset>
         <fieldset>
           <legend>Ingredients</legend>
+          <p class="hint ingredient-example">One ingredient per row: <strong>amount</strong>, <strong>unit</strong>, then <strong>ingredient</strong>. For example, <strong>3 · slices · bread</strong> or <strong>2 · whole · eggs</strong>. Leave the amount blank for "to taste".</p>
+          <div class="ingredient-head" aria-hidden="true"><span>Amount</span><span>Unit</span><span>Ingredient</span></div>
           <div id="ingredient-rows"></div>
           <button type="button" class="btn ghost small" id="add-ingredient"><i data-lucide="plus"></i>Add ingredient</button>
         </fieldset>

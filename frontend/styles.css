@@ -512,6 +512,8 @@ a.btn { text-decoration: none; }
 .inline-form input[name="name"] { flex: 1 1 200px; }
 .inline-form input[name="quantity"] { flex: 0 0 80px; }
 .inline-form input[name="unit"] { flex: 0 0 90px; }
+.inline-form select[name="unit"] { flex: 0 0 140px; padding: 10px 12px; }
+.pantry-form input[name="quantity"] { flex: 0 0 72px; }
 .inline-form .money-input { flex: 0 0 120px; }
 .item-list { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 8px; }
 .item-row {
@@ -588,8 +590,10 @@ dialog::backdrop { background: rgba(23, 23, 28, 0.45); }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 fieldset { border: var(--border); border-radius: 14px; padding: 14px; background: var(--paper); }
 legend { font-family: var(--display); font-size: 0.88rem; font-weight: 700; padding: 0 6px; }
-.ingredient-row { display: grid; grid-template-columns: 70px 84px 1fr auto; gap: 8px; margin-bottom: 8px; }
-.ingredient-row input { padding: 8px 10px; background: var(--card); }
+.ingredient-row { display: grid; grid-template-columns: 70px 132px 1fr auto; gap: 8px; margin-bottom: 8px; }
+.ingredient-row input, .ingredient-row select { padding: 8px 10px; background-color: var(--card); min-width: 0; }
+.ingredient-example { margin: 0 0 10px; }
+.ingredient-head { display: grid; grid-template-columns: 70px 132px 1fr 30px; gap: 8px; margin-bottom: 4px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 12px; }
 
 /* ---------- Toast & confetti ---------- */
@@ -631,7 +635,8 @@ legend { font-family: var(--display); font-size: 0.88rem; font-weight: 700; padd
   .page-head { align-items: stretch; }
   .search { flex-basis: 100%; }
   .budget-display input { width: 140px; font-size: 2rem; }
-  .ingredient-row { grid-template-columns: 58px 66px 1fr auto; }
+  .ingredient-row { grid-template-columns: 54px 104px 1fr auto; }
+  .ingredient-head { grid-template-columns: 54px 104px 1fr 30px; }
   .result-summary { flex-direction: column; align-items: stretch; }
   .result-summary .ring-wrap { margin: 0 auto; }
   .stat { flex: 1 1 40%; min-width: 0; }
