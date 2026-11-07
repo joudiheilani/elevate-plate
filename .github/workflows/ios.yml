@@ -77,7 +77,12 @@ jobs:
         run: |
           xcodebuild $XCODE_TARGET -scheme App -configuration Debug \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO build | tail -40
+            CODE_SIGNING_ALLOWED=NO build > "$RUNNER_TEMP/build.log" 2>&1 || {
+              grep -E "error:" "$RUNNER_TEMP/build.log" | head -40
+              tail -60 "$RUNNER_TEMP/build.log"
+              exit 1
+            }
+          tail -20 "$RUNNER_TEMP/build.log"
 
       - name: Write the App Store Connect API key
         if: ${{ inputs.upload }}
@@ -114,7 +119,17 @@ jobs:
             PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
             MARKETING_VERSION="${{ inputs.version }}" \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
-            archive | tail -60
+            archive > "$RUNNER_TEMP/archive.log" 2>&1 || {
+              echo "::error::The signed build failed. Xcode's error lines are below."
+              # Each error also becomes an annotation, shown on the run's summary page.
+              grep -E "error:" "$RUNNER_TEMP/archive.log" | sort -u | head -8 \
+                | sed 's/^/::error title=Xcode::/'
+              grep -E "error:|[Pp]rovisioning|[Ss]igning|[Tt]eam" "$RUNNER_TEMP/archive.log" | head -40
+              echo "----- last 60 lines of the build log -----"
+              tail -60 "$RUNNER_TEMP/archive.log"
+              exit 1
+            }
+          tail -20 "$RUNNER_TEMP/archive.log"
 
       - name: Upload to App Store Connect
         if: ${{ inputs.upload }}
