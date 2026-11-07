@@ -89,11 +89,10 @@ A bundle ID is your app's permanent unique name, like `com.yourname.elevateplate
 5. If the upload step fails, send the red error to Claude. The first signed build often
    needs one small fix.
 
-## Step 8: Fill in your contact email (~2 min)
+## Step 8: Fill in your contact email (done)
 
-`frontend/privacy.html` and `frontend/support.html` say
-`REPLACE-WITH-YOUR-CONTACT-EMAIL`. Tell Claude the email you want to use for app support
-(it will be public), or replace it yourself, then push.
+The privacy policy and support page list **elevateplatesupport@gmail.com**. Check that
+inbox now and then: Apple and users may write to it.
 
 ## Step 9: Fill in the App Store listing (~45 min)
 
