@@ -63,8 +63,9 @@ h2 { font-size: 1.05rem; font-weight: 700; margin: 0 0 16px; display: flex; alig
 h3 { margin: 0; font-size: 1.05rem; }
 .subtle { color: var(--muted); margin: 0; font-size: 0.93rem; line-height: 1.55; }
 .hint { color: var(--muted); font-size: 0.82rem; margin: 12px 0 0; line-height: 1.5; }
-.hint.with-icon { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.hint .lucide { width: 14px; height: 14px; }
+/* Icon stays beside the text (not on its own line) when the text wraps on phones. */
+.hint.with-icon { display: flex; align-items: flex-start; gap: 6px; }
+.hint .lucide { width: 14px; height: 14px; flex: none; margin-top: 2px; }
 .eyebrow { display: block; font-family: var(--display); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
 .lucide { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
 
