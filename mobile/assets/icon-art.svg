@@ -1,36 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <!-- Elevate Plate app icon: a hand serving a steaming plate of food.
-       Neobrutalist style: white shapes, thick ink outlines, hard offset shadow.
-       Drawn on a transparent canvas; the icons put it on the app's teal (#63e6be).
-       Rendered to PNG by scripts in this repo's history; edit here and re-export. -->
-  <defs>
-    <filter id="hard-shadow" x="-10%" y="-10%" width="130%" height="130%">
-      <feOffset in="SourceAlpha" dx="20" dy="20" result="offset"/>
-      <feFlood flood-color="#17171c"/>
-      <feComposite in2="offset" operator="in"/>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-  </defs>
-  <g stroke="#17171c" stroke-width="28" stroke-linejoin="round" stroke-linecap="round">
-    <g filter="url(#hard-shadow)">
-      <!-- Arm and open hand, palm up under the plate, fingertips curling up its side -->
-      <path fill="#fffdf8" d="M178 862 L356 642 L652 630 C694 628 726 614 744 580
-        C774 594 790 646 742 676 C720 690 698 694 676 696 L482 714 L334 934 Z"/>
-      <!-- Sleeve (runs off the edge) and cuff -->
-      <path fill="#b197fc" d="M190 826 L370 910 L34 1358 L-146 1274 Z"/>
-      <path fill="#ffd43b" d="M196 820 L364 906 L400 856 L232 770 Z"/>
-      <!-- Food: one mound with a sprig on top -->
-      <path fill="#ff8787" d="M300 522 C300 420 400 372 512 372 C624 372 724 420 724 522 Z"/>
-      <path fill="#63e6be" d="M560 392 C572 346 616 324 660 330 C652 374 606 398 560 392 Z"/>
-      <!-- Plate: shallow dish under a wide rim -->
-      <path fill="#fffdf8" d="M282 572 Q512 676 742 572 Z"/>
-      <rect fill="#fffdf8" x="208" y="520" width="608" height="54" rx="27"/>
-    </g>
-    <!-- Steam -->
-    <g fill="none" stroke-width="30">
-      <path d="M424 318 C384 268 464 228 424 172"/>
-      <path d="M512 306 C472 248 552 200 512 132"/>
-      <path d="M600 318 C560 268 640 228 600 172"/>
-    </g>
-  </g>
-</svg>
+<!-- Elevate Plate app icon: a place setting (fork, plate of food, knife) in the app's cartoon style on teal.
+     Exported to every icon size; edit here and re-export. -->
+<defs>
+<filter id="hs" x="-20%" y="-20%" width="140%" height="140%">
+  <feOffset in="SourceAlpha" dx="20" dy="20" result="o"/><feFlood flood-color="#17171c"/>
+  <feComposite in2="o" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+</filter></defs><rect x="-600" y="-600" width="2224" height="2224" fill="#63e6be"/><g filter="url(#hs)"><g transform="translate(150 530)"><g fill="#17171c" stroke="#17171c" stroke-width="56" stroke-linejoin="round">
+  <rect x="-62" y="-330" width="26" height="170" rx="13"/>
+  <rect x="-21" y="-330" width="26" height="170" rx="13"/>
+  <rect x="20" y="-330" width="26" height="170" rx="13"/>
+  <path d="M-62 -190 H46 V-150 Q46 -80 -8 -60 Q-62 -80 -62 -150 Z"/>
+  <rect x="-36" y="-90" width="56" height="420" rx="28"/>
+</g><g fill="#fffdf8">
+  <rect x="-62" y="-330" width="26" height="170" rx="13"/>
+  <rect x="-21" y="-330" width="26" height="170" rx="13"/>
+  <rect x="20" y="-330" width="26" height="170" rx="13"/>
+  <path d="M-62 -190 H46 V-150 Q46 -80 -8 -60 Q-62 -80 -62 -150 Z"/>
+  <rect x="-36" y="-90" width="56" height="420" rx="28"/>
+</g></g><g transform="translate(878 530)"><g fill="#17171c" stroke="#17171c" stroke-width="56" stroke-linejoin="round">
+  <path d="M-40 -330 Q62 -300 54 -40 L-40 -40 Z"/>
+  <rect x="-40" y="-60" width="58" height="390" rx="29"/>
+</g><g fill="#fffdf8">
+  <path d="M-40 -330 Q62 -300 54 -40 L-40 -40 Z"/>
+  <rect x="-40" y="-60" width="58" height="390" rx="29"/>
+</g></g><g><g fill="#17171c" stroke="#17171c" stroke-width="56" stroke-linejoin="round"><circle cx="512" cy="520" r="280"/></g><g fill="#fffdf8"><circle cx="512" cy="520" r="280"/></g></g><circle cx="512" cy="520" r="201.6" fill="none" stroke="#17171c" stroke-width="18"/><g><g fill="#17171c" stroke="#17171c" stroke-width="56" stroke-linejoin="round"><circle cx="512" cy="520" r="117.6"/></g><g fill="#ff8787"><circle cx="512" cy="520" r="117.6"/></g></g><g><g fill="#17171c" stroke="#17171c" stroke-width="56" stroke-linejoin="round"><path d="M0 0 C12 -46 56 -68 100 -62 C92 -18 46 6 0 0 Z" transform="translate(516 504) scale(1.0)"/></g><g fill="#2fb37f"><path d="M0 0 C12 -46 56 -68 100 -62 C92 -18 46 6 0 0 Z" transform="translate(516 504) scale(1.0)"/></g></g></g></svg>
