@@ -107,12 +107,6 @@ h3 { margin: 0; font-size: 1.05rem; }
 }
 .brand { display: flex; align-items: center; gap: 12px; font-family: var(--display); font-size: 1.3rem; font-weight: 700; letter-spacing: -0.03em; }
 .brand-name b { font-weight: 700; background: var(--mint); padding: 0 6px; border: var(--border); border-radius: 8px; margin-left: 2px; }
-.brand-mark {
-  display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; border: var(--border);
-  background: var(--yellow); box-shadow: var(--hard-sm); transform: rotate(-6deg); transition: transform 0.4s var(--spring);
-}
-.brand:hover .brand-mark { transform: rotate(8deg) scale(1.06); }
-.brand-mark .lucide { width: 22px; height: 22px; }
 
 .tabs { position: relative; display: flex; gap: 2px; padding: 5px; border: var(--border); border-radius: 16px; background: var(--card); box-shadow: var(--hard-sm); }
 .tab-indicator {
@@ -619,7 +613,6 @@ legend { font-family: var(--display); font-size: 0.88rem; font-weight: 700; padd
 @media (max-width: 600px) {
   .topbar { padding: 10px 16px; gap: 10px; }
   .brand { font-size: 1.1rem; }
-  .brand-mark { width: 36px; height: 36px; }
   main { padding: 12px 16px 48px; }
   .card { padding: 18px; }
   .week-grid, .gen-week { grid-template-columns: 1fr; }

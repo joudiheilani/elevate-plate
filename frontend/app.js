@@ -414,8 +414,8 @@ async function saveProfile(changes) {
 
 function renderBudgetChip() {
   if (!state.shopping || !state.profile) return;
-  // Groceries plus what you expect to spend eating out.
-  const total = state.shopping.estimated_total + (state.shopping.dining_out_total || 0);
+  // Groceries only: eating out is shown separately, not counted against the budget.
+  const total = state.shopping.estimated_total;
   const budget = state.profile.weekly_budget;
   $("#budget-chip-text").textContent = `${money(total, 0)} / ${money(budget, 0)}`;
   $(".budget-chip").classList.toggle("over", budget > 0 && total > budget);
@@ -676,7 +676,7 @@ function renderGenerated() {
   $("#gen-result").hidden = false;
   if (!plan) return;
 
-  const spent = plan.estimated_total + plan.dining_out_total;
+  const spent = plan.estimated_total; // groceries only
   const ratio = plan.budget > 0 ? spent / plan.budget : 0;
   setRing($("#gen-ring"), ratio);
   animateNumber($("#gen-ring-pct"), Math.round(ratio * 100), (v) => `${Math.round(v)}%`);
@@ -701,7 +701,7 @@ function renderGenerated() {
   }
 
   const notes = plan.within_budget && plan.meals.length
-    ? [`<p class="notice good">${icon("circle-check")} This week fits your budget with ${money(plan.budget - spent)} to spare${plan.dining_out_total ? " after eating out" : ""}.</p>`]
+    ? [`<p class="notice good">${icon("circle-check")} This week fits your budget with ${money(plan.budget - spent)} to spare.</p>`]
     : [];
   notes.push(...plan.notes.map((note) => `<p class="notice">${icon("triangle-alert")} ${escapeHtml(note)}</p>`));
   $("#gen-notes").innerHTML = notes.join("");
@@ -808,7 +808,7 @@ function renderPlanner() {
           <div class="out-details" data-day="${day}" data-meal="${meal.key}">
             <input data-out-note maxlength="120" placeholder="Where? (optional)" value="${escapeHtml(out.note)}" aria-label="Where you're eating, ${dayName} ${meal.label}" />
             <input data-out-cost type="number" min="0" max="2000" step="any" inputmode="decimal" placeholder="$ cost" value="${out.cost ?? ""}"
-              aria-label="Expected cost for everyone, ${dayName} ${meal.label}" title="What you expect to spend, for everyone. Counts toward your weekly budget." />
+              aria-label="Expected cost for everyone, ${dayName} ${meal.label}" title="What you expect to spend, for everyone. Shown separately from your grocery budget." />
           </div>`;
       } else if (entry) {
         const conflicts = recipesById.get(entry.recipe.id)?.conflicts ?? [];
@@ -1250,12 +1250,12 @@ async function renderShopping() {
   // Budget meter
   const budget = state.profile.weekly_budget;
   const eatingOut = data.dining_out_total || 0;
-  const spent = data.estimated_total + eatingOut;
+  const spent = data.estimated_total; // groceries only
   const ratio = budget > 0 ? spent / budget : 0;
   animateNumber($("#shop-total"), data.estimated_total, (v) => money(v));
   const diningNote = $("#shop-dining-note");
   diningNote.hidden = !eatingOut;
-  diningNote.innerHTML = `${icon("utensils")}Plus about ${money(eatingOut)} you expect to spend eating out this week, included in the budget meter above.`;
+  diningNote.innerHTML = `${icon("utensils")}You also expect to spend about ${money(eatingOut)} eating out this week. That's separate from your grocery budget.`;
   $("#shop-budget").textContent = money(budget, 0);
   const meter = $("#shop-meter");
   requestAnimationFrame(() => { meter.style.width = `${Math.min(ratio, 1) * 100}%`; });

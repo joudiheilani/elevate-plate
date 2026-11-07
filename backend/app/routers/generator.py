@@ -53,8 +53,8 @@ def generate(payload: GenerateRequest, db: DbSession, user: CurrentUser):
     """Preview a generated week. Nothing is saved until the plan is applied.
 
     With `fill_gaps`, meals already planned that week are kept and only empty slots
-    are filled ("mix" mode). Slots marked as dining out are never filled, and their
-    expected cost comes out of the grocery budget.
+    are filled ("mix" mode). Slots marked as dining out are never filled; their
+    expected cost is reported separately and isn't part of the grocery budget.
     """
     saved = db.scalars(select(FoodRestriction).where(FoodRestriction.user_id == user.id))
     restrictions = [*saved, *diet_restrictions(payload.diet)]

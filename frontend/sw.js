@@ -1,7 +1,7 @@
 // Service worker for the installable web app: keeps the app's own files available
 // offline. Network first, so new deployments show up right away; the cache is only
 // used when there's no connection. API data is cached by app.js, not here.
-const CACHE = "elevate-plate-v2";
+const CACHE = "elevate-plate-v4";
 const APP_SHELL = [
   "./",
   "index.html",

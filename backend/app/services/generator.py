@@ -9,13 +9,14 @@ Approach:
 3. Fill each open slot (day x meal) greedily. A recipe is scored on its *extra* grocery
    cost given what's already on the list (so a bag of rice bought for Monday makes rice
    dishes later in the week nearly free), how much of it the pantry covers, how often
-   it's been used, and a little randomness so "shuffle" gives a different week.
+   it's been used, and a little randomness so "shuffle" gives a different week. A recipe
+   already on the menu that day is avoided, so lunch and dinner aren't the same dish.
    With macro goals, it's also scored on how close its macros come to what's left of
    that day's goal (each meal gets a share: breakfast 25%, lunch 35%, dinner 40%).
    One serving of a recipe is often too little for a high goal, so with goals each
    recipe can also be picked at 1.5 or 2 servings per person (bought for accordingly).
-   Slots the user marked as dining out are skipped, and what they expect to spend
-   eating out comes out of the grocery budget.
+   Slots the user marked as dining out are skipped. What they expect to spend eating
+   out is reported separately; the budget is for groceries only.
 4. Price the grocery list in whole packages. While it's over budget, swap generated
    meals for alternatives that lower the total until it fits (or no swap helps).
 """
@@ -224,6 +225,17 @@ class _Basket:
                 self.amounts[key] += line.quantity
 
 
+def _repeats_in_a_day(slots: list[_Slot]) -> bool:
+    """True if a generated meal repeats a recipe already eaten that day."""
+    seen: set[tuple[dt.date, str]] = set()
+    for slot in slots:
+        key = (slot.day, slot.pick.name)
+        if key in seen and not slot.locked:
+            return True
+        seen.add(key)
+    return False
+
+
 def _cheaper_plan(
     slots: list[_Slot], pools: dict[str, list[_Candidate]], total: float, pantry, max_uses: int
 ) -> tuple[list[_Slot], float] | None:
@@ -253,6 +265,8 @@ def _cheaper_plan(
                 _Slot(slot.day, slot.meal, alt) if i in indexes else slot
                 for i, slot in enumerate(slots)
             ]
+            if _repeats_in_a_day(trial):
+                continue
             _, trial_total = _groceries(trial, pantry)
             if trial_total < total:
                 return trial, trial_total
@@ -263,6 +277,8 @@ def _cheaper_plan(
             if alt.name == slot.pick.name or uses[alt.name] >= max_uses:
                 continue
             trial = [*slots[:index], _Slot(slot.day, slot.meal, alt), *slots[index + 1 :]]
+            if _repeats_in_a_day(trial):
+                continue
             _, trial_total = _groceries(trial, pantry)
             if trial_total < total:
                 return trial, trial_total
@@ -300,8 +316,7 @@ def generate_plan(
     taken = {(slot.day, slot.meal) for slot in locked}
     taken |= {(d.day, d.meal_type) for d in dining_out}
     dining_total = round(sum(d.cost or 0 for d in dining_out), 2)
-    # What's left for groceries once meals out are paid for.
-    budget = max(req.weekly_budget - dining_total, 0)
+    budget = req.weekly_budget  # groceries only; eating out is tracked separately
 
     meals = [meal for meal in MEAL_ORDER if meal in req.meals]
     pools = {meal: [c for c in candidates if meal in c.meal_types] for meal in MEAL_ORDER}
@@ -366,6 +381,9 @@ def generate_plan(
         # Allow repeats only as often as the pool size forces.
         cap = max(2, math.ceil(sum(1 for _, m in wanted if m == meal) / len(pool)))
         options = [c for c in pool if uses[c.name] < cap] or pool
+        # Never the same dish twice in one day (unless nothing else fits).
+        today = {slot.pick.name for slot in slots if slot.day == day}
+        options = [c for c in options if c.name not in today] or options
 
         def score(candidate: _Candidate, target=target, meal=meal) -> float:
             return (
@@ -415,21 +433,18 @@ def generate_plan(
         )
     if dining_out:
         count = len(dining_out)
-        spend = f" (about ${dining_total:.2f}, taken out of your budget)" if dining_total else ""
+        spend = (
+            f" (about ${dining_total:.2f}, not part of your grocery budget)" if dining_total else ""
+        )
         notes.append(
             f"Left {count} meal{'s' if count != 1 else ''} open because you're eating out"
             f"{spend}."
         )
     within_budget = total <= budget
     if slots and not within_budget:
-        groceries_budget = (
-            f"${budget:.2f} left for groceries after eating out"
-            if dining_total
-            else f"${req.weekly_budget:.2f} budget"
-        )
         notes.append(
             f"The cheapest plan we could build costs about ${total:.2f}, above your "
-            f"{groceries_budget}. Try fewer meals, a longer cooking time "
+            f"${budget:.2f} grocery budget. Try fewer meals, a longer cooking time "
             "or adding what you already have to your pantry."
         )
 

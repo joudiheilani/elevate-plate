@@ -55,7 +55,7 @@ def test_tight_budget_lowers_cost(client):
 def test_impossible_budget_explains_itself(client):
     plan = generate(client, weekly_budget=10)
     assert plan["within_budget"] is False
-    assert any("above your $10.00 budget" in note for note in plan["notes"])
+    assert any("above your $10.00 grocery budget" in note for note in plan["notes"])
 
 
 def test_missing_meal_types_are_reported(client):
@@ -212,3 +212,11 @@ def test_saved_breakfast_names_go_to_breakfast(client, make_recipe):
         "dinner",
     )
     assert _meal_types(Recipe(id=2, name="Huevos Rancheros"), {}) == ("breakfast", "lunch")
+
+
+def test_no_recipe_twice_in_one_day(client):
+    for seed in range(8):
+        for goals in (None, {"calories": 2400, "protein_g": 130}):
+            plan = generate(client, seed=seed, weekly_budget=90, macro_goals=goals)
+            pairs = [(m["day"], m["recipe"]["name"]) for m in plan["meals"]]
+            assert len(pairs) == len(set(pairs)), [p for p in pairs if pairs.count(p) > 1]

@@ -45,7 +45,7 @@ def test_shopping_list_reports_dining_spend(client):
     assert shopping["dining_out_total"] == 42.5
 
 
-def test_generator_skips_dining_out_and_budgets_for_it(client):
+def test_generator_skips_dining_out_and_keeps_it_out_of_the_grocery_budget(client):
     mark_out(client, cost=40)
     plan = generate(client, weekly_budget=120)
     slots = {(m["day"], m["meal_type"]) for m in plan["meals"]}
@@ -54,8 +54,10 @@ def test_generator_skips_dining_out_and_budgets_for_it(client):
     assert plan["dining_out_total"] == 40
     assert plan["dining_out"][0]["meal_type"] == "dinner"
     assert any("eating out" in note for note in plan["notes"])
-    if plan["within_budget"]:
-        assert plan["estimated_total"] <= 80  # what's left after eating out
+    # Eating out is reported but doesn't shrink the grocery budget.
+    assert plan["budget"] == 120
+    assert plan["within_budget"] == (plan["estimated_total"] <= 120)
+    assert any("not part of your grocery budget" in note for note in plan["notes"])
 
 
 def test_dining_out_slots_kept_in_auto_mode_apply(client):

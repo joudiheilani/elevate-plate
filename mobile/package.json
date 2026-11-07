@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "iPhone app for Elevate Plate: the web app's frontend packaged with Capacitor.",
   "scripts": {
-    "assets": "capacitor-assets generate --ios --iconBackgroundColor '#ffd43b' --splashBackgroundColor '#f6f1e7'",
+    "assets": "capacitor-assets generate --ios --iconBackgroundColor '#63e6be' --splashBackgroundColor '#f6f1e7'",
     "sync": "cap sync ios"
   },
   "dependencies": {

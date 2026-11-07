@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Elevate Plate app icon: a hand serving a steaming plate of food.
+       Neobrutalist style: white shapes, thick ink outlines, hard offset shadow.
+       Drawn on a transparent canvas; the icons put it on the app's teal (#63e6be).
+       Rendered to PNG by scripts in this repo's history; edit here and re-export. -->
+  <defs>
+    <filter id="hard-shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feOffset in="SourceAlpha" dx="20" dy="20" result="offset"/>
+      <feFlood flood-color="#17171c"/>
+      <feComposite in2="offset" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g stroke="#17171c" stroke-width="28" stroke-linejoin="round" stroke-linecap="round">
+    <g filter="url(#hard-shadow)">
+      <!-- Arm and open hand, palm up under the plate, fingertips curling up its side -->
+      <path fill="#fffdf8" d="M178 862 L356 642 L652 630 C694 628 726 614 744 580
+        C774 594 790 646 742 676 C720 690 698 694 676 696 L482 714 L334 934 Z"/>
+      <!-- Sleeve (runs off the edge) and cuff -->
+      <path fill="#b197fc" d="M190 826 L370 910 L34 1358 L-146 1274 Z"/>
+      <path fill="#ffd43b" d="M196 820 L364 906 L400 856 L232 770 Z"/>
+      <!-- Food: one mound with a sprig on top -->
+      <path fill="#ff8787" d="M300 522 C300 420 400 372 512 372 C624 372 724 420 724 522 Z"/>
+      <path fill="#63e6be" d="M560 392 C572 346 616 324 660 330 C652 374 606 398 560 392 Z"/>
+      <!-- Plate: shallow dish under a wide rim -->
+      <path fill="#fffdf8" d="M282 572 Q512 676 742 572 Z"/>
+      <rect fill="#fffdf8" x="208" y="520" width="608" height="54" rx="27"/>
+    </g>
+    <!-- Steam -->
+    <g fill="none" stroke-width="30">
+      <path d="M424 318 C384 268 464 228 424 172"/>
+      <path d="M512 306 C472 248 552 200 512 132"/>
+      <path d="M600 318 C560 268 640 228 600 172"/>
+    </g>
+  </g>
+</svg>
