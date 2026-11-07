@@ -104,23 +104,23 @@ jobs:
           </plist>
           EOF
 
-      - name: Archive (signed release build)
+      # The archive is built unsigned: signing it here would need an Apple *Development*
+      # profile, which Apple only issues to teams with a registered iPhone. The upload step
+      # signs it for the App Store instead (a distribution profile needs no devices), using
+      # Apple's cloud signing through the API key.
+      - name: Archive (release build)
         if: ${{ inputs.upload }}
         run: |
           xcodebuild $XCODE_TARGET -scheme App -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/App.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
-            -authenticationKeyID "${{ secrets.ASC_KEY_ID }}" \
-            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}" \
             DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
-            CODE_SIGN_STYLE=Automatic \
             PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
             MARKETING_VERSION="${{ inputs.version }}" \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            CODE_SIGNING_ALLOWED=NO \
             archive > "$RUNNER_TEMP/archive.log" 2>&1 || {
-              echo "::error::The signed build failed. Xcode's error lines are below."
+              echo "::error::The release build failed. Xcode's error lines are below."
               # Each error also becomes an annotation, shown on the run's summary page.
               grep -E "error:" "$RUNNER_TEMP/archive.log" | sort -u | head -8 \
                 | sed 's/^/::error title=Xcode::/'
@@ -131,7 +131,7 @@ jobs:
             }
           tail -20 "$RUNNER_TEMP/archive.log"
 
-      - name: Upload to App Store Connect
+      - name: Sign and upload to App Store Connect
         if: ${{ inputs.upload }}
         run: |
           xcodebuild -exportArchive \
@@ -141,7 +141,15 @@ jobs:
             -allowProvisioningUpdates \
             -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
             -authenticationKeyID "${{ secrets.ASC_KEY_ID }}" \
-            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}"
+            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}" \
+            > "$RUNNER_TEMP/export.log" 2>&1 || {
+              echo "::error::Signing or uploading failed. Xcode's error lines are below."
+              grep -E "error:|Error " "$RUNNER_TEMP/export.log" | sort -u | head -8 \
+                | sed 's/^/::error title=Xcode::/'
+              tail -60 "$RUNNER_TEMP/export.log"
+              exit 1
+            }
+          tail -20 "$RUNNER_TEMP/export.log"
           echo "Uploaded version ${{ inputs.version }} (build $BUILD_NUMBER). It appears in App Store Connect > TestFlight after Apple finishes processing (usually 10-30 minutes)."
 
       - name: Clean up the key
