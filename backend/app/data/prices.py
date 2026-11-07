@@ -178,7 +178,7 @@ PRICES: dict[str, Price] = {
     "oregano": Price(1, "", 2.50),
     "baking powder": Price(1, "", 2.50),
     "vanilla": Price(1, "", 5.00),
-    # ---------- Estimates: ingredients common in TheMealDB recipes ----------
+    # ---------- Estimates: other common recipe ingredients ----------
     "water": Price(1, "", 0.0, "Free (tap water)"),
     "pepper": Price(1, "", 3.00),  # ground black pepper
     "red pepper": Price(1, "", 1.25),  # UK name for a bell pepper

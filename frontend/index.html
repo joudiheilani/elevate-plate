@@ -27,7 +27,7 @@
     <section id="auth-screen" class="auth-screen" hidden>
       <div class="auth-card card">
         <div class="brand auth-brand">
-          <span class="brand-mark"><i data-lucide="chef-hat"></i></span>
+          <span class="brand-mark"><svg class="lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 1.5c-.6.6-.6 1.2 0 1.8s.6 1.2 0 1.8"/><path d="M13 1c-.6.6-.6 1.2 0 1.8s.6 1.2 0 1.8"/><path d="M6 10a6 4 0 0 1 12 0"/><path d="M3 10h18"/><path d="m15.4 17.4 3.2-2.8a2 2 0 1 1 2.8 2.9l-3.6 3.3c-.7.8-1.7 1.2-2.8 1.2h-4c-1.1 0-2.1-.4-2.8-1.2l-1.302-1.464A1 1 0 0 0 6.151 19H5"/><path d="M2 14h12a2 2 0 0 1 0 4h-2"/><path d="M5 14v6a1 1 0 0 1-1 1H2"/></svg></span>
           <span class="brand-name">Elevate <b>Plate</b></span>
         </div>
         <h1 id="auth-title">Welcome back</h1>
@@ -58,7 +58,7 @@
 
     <header class="topbar">
       <div class="brand">
-        <span class="brand-mark"><i data-lucide="chef-hat"></i></span>
+        <span class="brand-mark"><svg class="lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 1.5c-.6.6-.6 1.2 0 1.8s.6 1.2 0 1.8"/><path d="M13 1c-.6.6-.6 1.2 0 1.8s.6 1.2 0 1.8"/><path d="M6 10a6 4 0 0 1 12 0"/><path d="M3 10h18"/><path d="m15.4 17.4 3.2-2.8a2 2 0 1 1 2.8 2.9l-3.6 3.3c-.7.8-1.7 1.2-2.8 1.2h-4c-1.1 0-2.1-.4-2.8-1.2l-1.302-1.464A1 1 0 0 0 6.151 19H5"/><path d="M2 14h12a2 2 0 0 1 0 4h-2"/><path d="M5 14v6a1 1 0 0 1-1 1H2"/></svg></span>
         <span class="brand-name">Elevate <b>Plate</b></span>
       </div>
       <nav class="tabs" role="tablist" aria-label="Sections">
@@ -235,7 +235,7 @@
             <div class="field wide switches">
               <label class="switch"><input type="checkbox" id="gen-use-pantry" checked /><span class="switch-track"></span>Use what's in my pantry</label>
               <label class="switch"><input type="checkbox" id="gen-staples" checked /><span class="switch-track"></span>I have basics at home (oil, spices, soy sauce)</label>
-              <label class="switch" title="Your recipes from the Recipes tab, including ones added from Discover"><input type="checkbox" id="gen-use-library" checked /><span class="switch-track"></span>Include my saved recipes</label>
+              <label class="switch" title="Your recipes from the Recipes tab"><input type="checkbox" id="gen-use-library" checked /><span class="switch-track"></span>Include my saved recipes</label>
             </div>
 
             <p class="hint with-icon wide" id="gen-restrictions-note"></p>
@@ -323,20 +323,6 @@
         </div>
         <p class="notice" id="hidden-note" hidden></p>
         <div id="recipe-list" class="recipe-list"></div>
-
-        <div class="card discover">
-          <h2><span class="icon-tile"><i data-lucide="globe"></i></span>Discover more recipes</h2>
-          <p class="subtle">Search a free public recipe database and add anything you like to your library. Each result shows an estimated cost and whether it fits your diet and allergies.</p>
-          <form id="discover-form" class="inline-form discover-form">
-            <label class="search">
-              <i data-lucide="search"></i>
-              <input name="q" type="search" placeholder="Try curry, pasta, chicken, soup..." required minlength="2" maxlength="60" />
-            </label>
-            <button class="btn primary" type="submit"><i data-lucide="search"></i><span>Search</span></button>
-          </form>
-          <p class="hint with-icon"><i data-lucide="info"></i>Recipe data and imagery: <a href="https://www.themealdb.com/" target="_blank" rel="noopener">TheMealDB</a>, free for educational use. Imported recipes link back to TheMealDB and the original source.</p>
-          <div id="discover-results" class="discover-grid"></div>
-        </div>
       </section>
 
       <!-- ============ Pantry ============ -->

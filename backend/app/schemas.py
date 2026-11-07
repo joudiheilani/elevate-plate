@@ -124,24 +124,6 @@ class RecipeOut(BaseModel):
     nutrition: Nutrition = Nutrition()  # per serving
 
 
-class DiscoveredRecipe(BaseModel):
-    """A recipe found on TheMealDB, previewed before importing."""
-
-    id: str
-    name: str
-    category: str
-    area: str
-    thumbnail: str
-    mealdb_url: str
-    source_url: str | None
-    ingredients: list[IngredientIn]
-    servings: int
-    cost_per_serving: float
-    nutrition: Nutrition
-    conflicts: list[Conflict]
-    in_library: bool
-
-
 class MealIdea(BaseModel):
     recipe: RecipeOut
     have: list[str]

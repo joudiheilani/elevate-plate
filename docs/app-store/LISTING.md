@@ -40,7 +40,6 @@ EAT SAFELY
 
 COOK WHAT YOU HAVE
 • "What can I make?" ranks recipes by how much you already have at home.
-• Discover thousands more recipes and add them to your library in one tap.
 
 PLUS
 • Weekly shopping reminders.
@@ -70,8 +69,8 @@ meal planner,grocery list,budget,recipes,pantry,shopping list,allergy,vegan,dinn
 > all its data. Checking items off gives haptic feedback, and the app shows your last
 > saved data when offline.
 >
-> Prices are labelled as estimates in the app. Recipes under "Discover" come from
-> TheMealDB and are credited in the app.
+> Prices and nutrition are labelled as estimates in the app. The built-in recipes
+> were written for Elevate Plate.
 
 ## App Privacy ("nutrition label") answers
 

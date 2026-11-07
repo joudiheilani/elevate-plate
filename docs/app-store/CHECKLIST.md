@@ -95,16 +95,7 @@ A bundle ID is your app's permanent unique name, like `com.yourname.elevateplate
 `REPLACE-WITH-YOUR-CONTACT-EMAIL`. Tell Claude the email you want to use for app support
 (it will be public), or replace it yourself, then push.
 
-## Step 9: Get a TheMealDB supporter key (before public release)
-
-TheMealDB's free key is for "development or educational use". Their terms say you
-"must become a supporter if releasing publicly on an appstore".
-
-1. Become a supporter at https://www.themealdb.com (they link to the options).
-2. In Vercel: your project → **Settings** → **Environment Variables** → add
-   `MEALDB_API_KEY` = your supporter key → **Save**, then redeploy.
-
-## Step 10: Fill in the App Store listing (~45 min)
+## Step 9: Fill in the App Store listing (~45 min)
 
 In App Store Connect → your app → the **1.0 Prepare for Submission** page. Copy the
 text from [LISTING.md](LISTING.md):
@@ -121,7 +112,7 @@ text from [LISTING.md](LISTING.md):
   planned week). Paste the review notes from LISTING.md.
 - **Build**: select the build you uploaded in Step 7.
 
-## Step 11: Submit for review
+## Step 10: Submit for review
 
 1. Click **Add for Review** → **Submit to App Review**.
 2. Watch your email. If Apple rejects it, the message in **App Store Connect →

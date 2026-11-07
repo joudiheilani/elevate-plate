@@ -14,7 +14,6 @@ from .migrations import migrate
 from .routers import (
     auth,
     dining_out,
-    discover,
     generator,
     groceries,
     pantry,
@@ -63,7 +62,6 @@ app.include_router(restrictions.router)
 app.include_router(profile.router)
 app.include_router(groceries.router)
 app.include_router(generator.router)
-app.include_router(discover.router)
 
 
 @app.get("/api/health", tags=["health"])

@@ -25,7 +25,6 @@ A budget-aware meal planner. Plan your week yourself, or have Elevate Plate gene
 
 ### Everything else
 
-- **Discover recipes**: search [TheMealDB](https://www.themealdb.com/), a free public recipe database, from the Recipes tab. Each result shows an estimated cost per serving and any diet/allergy conflicts, and can be added to your library in one click (credited, with links to TheMealDB and the original source).
 - **Recipe library**: create, edit, search and delete recipes with ingredients, servings, prep time and instructions.
 - **Weekly planner**: assign a recipe to any breakfast, lunch or dinner slot and move between weeks.
 - **Pantry & fridge**: record what you already have. The shopping list subtracts it: fully stocked items move to an "Already in your pantry" section, and partly stocked items show only the shortfall. One click adds a bought item to the pantry.
@@ -50,7 +49,6 @@ A whole week is generated in well under a second, for free, and the same inputs 
 ### Where the recipes come from
 
 - **Built-in catalog (112 recipes)**, in [`data/catalog.py`](backend/app/data/catalog.py): original write-ups of common home dishes (overnight oats, black bean tacos, minestrone...). Ingredient lists of everyday dishes aren't copyrightable, and the descriptions and instructions are written for this project, so they're free to use.
-- **TheMealDB** (on demand, via Discover): fetched live from TheMealDB's free API using its test key, which TheMealDB allows "during development of your app or for educational use". Results are credited as "Recipe data and imagery: TheMealDB", and imported recipes keep links to TheMealDB and to the original source. Recipes are only copied into your library when you choose to add one. Publishing an app on an app store would need a TheMealDB supporter key.
 - **Your own recipes**: whatever you add.
 
 ### Where the prices come from
@@ -145,15 +143,13 @@ elevate-plate/
 │   │   │   ├── restrictions.py  # /api/restrictions (allergies & dislikes)
 │   │   │   ├── profile.py    # /api/profile (budget, household, diet, mode)
 │   │   │   ├── groceries.py  # /api/groceries (your own shopping-list items)
-│   │   │   ├── generator.py  # /api/generator (generate & apply a week)
-│   │   │   └── discover.py   # /api/discover (search & import from TheMealDB)
+│   │   │   └── generator.py  # /api/generator (generate & apply a week)
 │   │   └── services/
 │   │       ├── auth.py       # Password hashing and session tokens
 │   │       ├── matching.py   # Name normalisation, allergy & diet groups, pantry matching
 │   │       ├── pricing.py    # Cost estimates and per-ingredient breakdowns
 │   │       ├── nutrition.py  # Macro estimates per serving
 │   │       ├── units.py      # Unit conversion (weight, volume, density, piece weight)
-│   │       ├── mealdb.py     # TheMealDB client and measure parser
 │   │       ├── shopping.py   # Scaling, aggregation, pantry subtraction, pricing
 │   │       └── generator.py  # Budget-aware meal plan generator
 │   └── tests/                # pytest suite
@@ -214,8 +210,6 @@ Interactive docs are served at `/docs` when running locally.
 | DELETE | `/api/groceries/{id}`                  | Remove one                                    |
 | POST   | `/api/generator`                       | Preview a generated week (nothing is saved); `fill_gaps: true` keeps meals already planned |
 | POST   | `/api/generator/apply`                 | Save a generated week to the library and planner |
-| GET    | `/api/discover?q=`                     | Search TheMealDB; results include estimated cost and conflicts |
-| POST   | `/api/discover/{id}/import`            | Add a TheMealDB recipe to the library (credited) |
 
 ## Running locally
 
@@ -236,7 +230,6 @@ Open http://localhost:8000 and create an account. With no `DATABASE_URL` set, da
 | --- | --- | --- |
 | `DATABASE_URL` | local SQLite file | Postgres connection string (set automatically by Vercel's Neon integration) |
 | `SEED_SAMPLE_DATA` | `true` | Give new accounts 4 sample recipes |
-| `MEALDB_API_KEY` | `1` (free test key) | TheMealDB key; a supporter key is required for App Store release |
 | `CORS_ORIGINS` | none | Extra allowed origins (the iPhone app's `capacitor://localhost` is always allowed) |
 
 ### Tests and linting
